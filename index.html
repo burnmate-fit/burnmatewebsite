@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Burnmate — AI Fitness Hardware for Your TV</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;0,700;0,900;1,300&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --black: #1A1A1A;
+    --dark: #242424;
+    --darker: #121212;
+    --accent: #8B5CF6;       /* Purple/Blue primary */
+    --accent2: #84CC16;      /* Lemon Green secondary */
+    --accent3: #f97316;      /* Warm accent for warnings */
+    --white: #f5f5f0;
+    --gray: #a0a0aa;
+    --card-bg: #252525;
+    --border: rgba(139,92,246,0.25);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--black);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 5%;
+    background: rgba(26,26,26,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  nav.scrolled { padding: 0.8rem 5%; background: rgba(26,26,26,0.97); }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--accent2); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    color: var(--gray);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent2);
+    color: var(--black) !important;
+    padding: 0.6rem 1.4rem;
+    border-radius: 2px;
+    font-weight: 700 !important;
+  }
+  .nav-cta:hover { background: #fff !important; color: var(--black) !important; }
+  .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+  .hamburger span { width: 26px; height: 2px; background: var(--white); display: block; transition: 0.3s; }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 0 5%;
+    background: var(--black);
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 50%, rgba(139,92,246,0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 80%, rgba(132,204,22,0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #1A1A1A 0%, #121212 100%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(139,92,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139,92,246,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    max-width: 700px;
+    animation: fadeUp 1s ease both;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.4);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.4rem 1rem;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--accent2); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.5rem;
+  }
+  .hero-title em { color: var(--accent); font-style: normal; }
+  .hero-title .outline {
+    -webkit-text-stroke: 2px var(--white);
+    color: transparent;
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: var(--gray);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 2.5rem;
+  }
+  .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent2);
+    color: var(--black);
+    padding: 1rem 2.2rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 2px;
+    border: none; cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-primary:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(132,204,22,0.3); }
+  .btn-outline {
+    background: transparent;
+    color: var(--white);
+    padding: 1rem 2.2rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .hero-stats {
+    position: absolute; right: 5%; bottom: 8%;
+    display: flex; gap: 2rem; z-index: 2;
+    animation: fadeUp 1s ease 0.4s both;
+  }
+  .stat-card {
+    text-align: center;
+    padding: 1.2rem 1.8rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    backdrop-filter: blur(10px);
+  }
+  .stat-card .num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    color: var(--accent2);
+    line-height: 1;
+  }
+  .stat-card .label { font-size: 0.7rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.12em; margin-top: 0.3rem; }
+
+  /* ── TV MOCKUP ── */
+  .hero-tv {
+    position: absolute; right: -2%; top: 50%; transform: translateY(-50%);
+    width: 46%;
+    z-index: 1;
+    animation: floatTV 6s ease-in-out infinite;
+  }
+  @keyframes floatTV { 0%,100%{transform:translateY(-50%) translateX(0)} 50%{transform:translateY(-52%) translateX(-8px)} }
+  .tv-frame {
+    width: 100%;
+    aspect-ratio: 16/10;
+    background: #1a1d26;
+    border-radius: 12px;
+    border: 8px solid #2a2e3a;
+    box-shadow: 0 0 0 2px #3a3e4a, 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(139,92,246,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .tv-screen {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #0d1117 0%, #151c2a 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .tv-scan {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+  }
+  .tv-figure {
+    width: 55%; position: relative;
+  }
+  .tv-figure svg { width: 100%; height: auto; }
+  .tv-hud-top {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    font-size: 0.55rem;
+  }
+  .hud-chip {
+    background: rgba(139,92,246,0.2);
+    border: 1px solid rgba(139,92,246,0.6);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .hud-metrics { display: flex; gap: 6px; }
+  .hud-m {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--white);
+    padding: 3px 7px;
+    border-radius: 2px;
+    font-size: 0.5rem;
+  }
+  .hud-m span { color: var(--accent2); font-weight: 700; }
+  .tv-hud-bottom {
+    position: absolute; bottom: 10px; left: 10px; right: 10px;
+  }
+  .ai-bubble {
+    background: rgba(13,17,23,0.9);
+    border: 1px solid rgba(132,204,22,0.4);
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .ai-avatar {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; color: var(--black); font-weight: 900;
+  }
+  .ai-text { font-size: 0.55rem; color: var(--white); line-height: 1.4; }
+  .ai-text strong { color: var(--accent2); }
+  .skeleton-bars {
+    margin-top: 4px; display: flex; gap: 3px;
+  }
+  .sk-bar {
+    height: 3px; border-radius: 2px; background: var(--accent2);
+    animation: skAnim 1.2s ease-in-out infinite;
+  }
+  .sk-bar:nth-child(1){width:30%;animation-delay:0s}
+  .sk-bar:nth-child(2){width:50%;animation-delay:0.1s}
+  .sk-bar:nth-child(3){width:20%;animation-delay:0.2s}
+  @keyframes skAnim{0%,100%{opacity:0.3}50%{opacity:1}}
+  .tv-stand {
+    width: 8%; margin: 0 auto;
+    height: 30px; background: #2a2e3a;
+    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+  }
+  .tv-base {
+    width: 25%; margin: 0 auto;
+    height: 8px;
+    background: #353b48;
+    border-radius: 2px;
+  }
+
+  /* Keyframe reuse */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── SECTION COMMON ── */
+  section { padding: 6rem 5%; }
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 0.8rem;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.5rem;
+  }
+  .section-title em { color: var(--accent); font-style: normal; }
+  .section-desc { color: var(--gray); font-size: 1rem; font-weight: 300; line-height: 1.8; max-width: 540px; }
+
+  /* ── WHY US ── */
+  #why { background: var(--darker); }
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    margin-top: 4rem;
+  }
+  .why-features { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .feature-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.8rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent2);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .feature-card:hover { border-color: rgba(139,92,246,0.5); transform: translateY(-4px); }
+  .feature-card:hover::before { transform: scaleX(1); }
+  .fc-icon {
+    width: 44px; height: 44px;
+    background: rgba(139,92,246,0.12);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .fc-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  .fc-desc { font-size: 0.85rem; color: var(--gray); line-height: 1.6; }
+
+  /* Device illustration */
+  .device-showcase {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .device-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(139,92,246,0.15);
+    animation: ringPulse 3s ease-in-out infinite;
+  }
+  .device-ring:nth-child(1){width:200px;height:200px;animation-delay:0s}
+  .device-ring:nth-child(2){width:300px;height:300px;animation-delay:0.5s;border-color:rgba(132,204,22,0.1)}
+  .device-ring:nth-child(3){width:400px;height:400px;animation-delay:1s;border-color:rgba(139,92,246,0.08)}
+  @keyframes ringPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.5}}
+  .device-box {
+    width: 160px; height: 200px;
+    background: linear-gradient(135deg, #2a2e3a, #202430);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.1);
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.8rem;
+    z-index: 2;
+  }
+  .device-led {
+    width: 8px; height: 8px;
+    background: var(--accent2);
+    border-radius: 50%;
+    position: absolute;
+    top: 14px; right: 14px;
+    box-shadow: 0 0 10px var(--accent2);
+    animation: ledBlink 1.5s ease-in-out infinite;
+  }
+  @keyframes ledBlink{0%,100%{opacity:1}50%{opacity:0.3}}
+  .device-icon { font-size: 2.5rem; color: var(--accent); }
+  .device-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray);
+    text-align: center;
+  }
+  .device-port {
+    width: 40px; height: 8px;
+    background: #444a58;
+    border-radius: 2px;
+    position: absolute;
+    bottom: 14px;
+  }
+  .floating-tag {
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 0.4rem;
+    z-index: 3;
+    animation: tagFloat 3s ease-in-out infinite;
+  }
+  .floating-tag i { color: var(--accent2); }
+  .tag-1 { top: 10%; left: 0; }
+  .tag-2 { bottom: 15%; right: 0; animation-delay: 1s; }
+  .tag-3 { top: 55%; left: -5%; animation-delay: 0.5s; }
+  @keyframes tagFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  /* ── HOW IT WORKS ── */
+  #how { background: var(--black); }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+    position: relative;
+  }
+  .steps-grid::before {
+    content: '';
+    position: absolute;
+    top: 50px; left: 12.5%; right: 12.5%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent), transparent);
+    opacity: 0.3;
+  }
+  .step-card {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    position: relative;
+  }
+  .step-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    color: rgba(139,92,246,0.08);
+    line-height: 1;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+  .step-icon-wrap {
+    width: 80px; height: 80px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.8rem;
+    color: var(--accent);
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+  .step-card:hover .step-icon-wrap {
+    background: rgba(139,92,246,0.12);
+    border-color: var(--accent2);
+    box-shadow: 0 0 30px rgba(132,204,22,0.2);
+  }
+  .step-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.6rem; }
+  .step-desc { font-size: 0.85rem; color: var(--gray); line-height: 1.6; }
+
+  /* ── FEATURES ── */
+  #features { background: var(--darker); }
+  .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; }
+  .features-tabs { display: flex; gap: 0.5rem; }
+  .ftab {
+    padding: 0.5rem 1.2rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--gray);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .ftab.active, .ftab:hover { background: var(--accent); color: var(--black); border-color: var(--accent); }
+  .features-bento {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1.2rem;
+  }
+  .bento-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    transition: all 0.3s;
+    overflow: hidden;
+    position: relative;
+  }
+  .bento-card:hover { border-color: rgba(139,92,246,0.45); transform: translateY(-3px); }
+  .bento-card.large { grid-column: span 2; }
+  .bento-card.tall { grid-row: span 2; }
+  .bento-card .bc-icon {
+    font-size: 2rem; color: var(--accent); margin-bottom: 1rem;
+  }
+  .bento-card .bc-icon.green { color: var(--accent2); }
+  .bento-card .bc-icon.red { color: var(--accent3); }
+  .bc-title { font-weight: 700; font-size: 1.15rem; margin-bottom: 0.6rem; }
+  .bc-desc { font-size: 0.88rem; color: var(--gray); line-height: 1.7; }
+  .bc-visual { margin-top: 1.5rem; }
+  .mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 60px; }
+  .mc-bar {
+    flex: 1; background: rgba(139,92,246,0.15);
+    border-radius: 2px 2px 0 0;
+    position: relative; overflow: hidden;
+  }
+  .mc-bar::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--accent2);
+    border-radius: 2px 2px 0 0;
+    animation: barGrow 1.5s ease both;
+  }
+  @keyframes barGrow{from{height:0}to{height:var(--h)}}
+  .mc-bar:nth-child(1)::after{--h:40%}
+  .mc-bar:nth-child(2)::after{--h:65%;animation-delay:0.1s}
+  .mc-bar:nth-child(3)::after{--h:50%;animation-delay:0.2s}
+  .mc-bar:nth-child(4)::after{--h:80%;animation-delay:0.3s;background:var(--accent)}
+  .mc-bar:nth-child(5)::after{--h:60%;animation-delay:0.4s}
+  .mc-bar:nth-child(6)::after{--h:90%;animation-delay:0.5s;background:var(--accent)}
+  .mc-bar:nth-child(7)::after{--h:70%;animation-delay:0.6s}
+  .posture-lines {
+    display: flex; gap: 1rem; align-items: center; margin-top: 1rem;
+  }
+  .pl-item { flex: 1; text-align: center; }
+  .pl-icon { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  .pl-label { font-size: 0.65rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; }
+  .pl-status { font-size: 0.7rem; font-weight: 700; margin-top: 0.2rem; }
+  .good { color: var(--accent2); }
+  .warn { color: #f97316; }
+  .diet-ring {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent2) 0% 35%, var(--accent) 35% 60%, var(--accent3) 60% 80%, #8a8f9e 80% 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin: 1rem auto 0;
+  }
+  .diet-ring-inner {
+    width: 60px; height: 60px;
+    background: var(--card-bg);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 700; text-align: center; line-height: 1.3;
+    color: var(--white);
+  }
+
+  /* ── PRICING ── */
+  #pricing { background: var(--black); }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+    align-items: start;
+  }
+  .plan-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2.5rem 2rem;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .plan-card.popular {
+    border-color: var(--accent2);
+    background: linear-gradient(180deg, rgba(132,204,22,0.08) 0%, var(--card-bg) 100%);
+    transform: scale(1.04);
+  }
+  .plan-card:hover { transform: translateY(-6px); }
+  .plan-card.popular:hover { transform: scale(1.04) translateY(-6px); }
+  .popular-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--accent2);
+    color: var(--black);
+    font-size: 0.7rem; font-weight: 800;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .plan-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gray); margin-bottom: 0.5rem;
+  }
+  .plan-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem; line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+  .plan-price sup { font-size: 1.5rem; vertical-align: super; }
+  .plan-period { font-size: 0.8rem; color: var(--gray); margin-bottom: 2rem; }
+  .plan-divider { height: 1px; background: var(--border); margin-bottom: 1.5rem; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem; }
+  .plan-features li {
+    font-size: 0.88rem; color: var(--gray);
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .plan-features li i { color: var(--accent2); font-size: 0.75rem; }
+  .plan-features li.off { text-decoration: line-through; opacity: 0.4; }
+  .plan-features li.off i { color: var(--gray); }
+  .btn-plan {
+    display: block; width: 100%; text-align: center;
+    padding: 0.9rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    border-radius: 2px;
+    text-decoration: none; cursor: pointer; border: none;
+    transition: all 0.25s;
+    background: rgba(139,92,246,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(139,92,246,0.3);
+  }
+  .btn-plan:hover { background: var(--accent); color: var(--black); }
+  .plan-card.popular .btn-plan { background: var(--accent2); color: var(--black); }
+  .plan-card.popular .btn-plan:hover { background: #fff; }
+
+  /* ── APP SECTION ── */
+  #app { background: var(--darker); }
+  .app-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4rem; align-items: center;
+    margin-top: 4rem;
+  }
+  .app-phones {
+    display: flex; gap: 1.5rem; align-items: flex-end; justify-content: center;
+  }
+  .phone-frame {
+    width: 140px;
+    aspect-ratio: 9/19;
+    background: #1a1d26;
+    border-radius: 24px;
+    border: 6px solid #252a38;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s;
+  }
+  .phone-frame:first-child { transform: rotate(-5deg) translateY(20px); }
+  .phone-frame:last-child { transform: rotate(3deg) translateY(10px); }
+  .phone-frame:hover { transform: rotate(0) translateY(-5px) !important; }
+  .phone-screen {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, #0d1117, #151c2a);
+    padding: 1rem 0.7rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .ph-topbar { display: flex; justify-content: space-between; align-items: center; }
+  .ph-logo { font-family: 'Bebas Neue', sans-serif; font-size: 0.65rem; color: var(--accent2); }
+  .ph-status { width: 5px; height: 5px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .ph-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 0.6rem;
+  }
+  .ph-card-label { font-size: 0.4rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; }
+  .ph-card-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--accent); line-height: 1; }
+  .ph-card-sub { font-size: 0.4rem; color: var(--gray); }
+  .ph-progress { margin-top: 0.3rem; }
+  .ph-prog-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; }
+  .ph-prog-fill { height: 100%; background: var(--accent2); border-radius: 2px; }
+  .ph-menu {
+    display: flex; justify-content: space-around;
+    position: absolute; bottom: 6px; left: 6px; right: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 0.4rem 0;
+  }
+  .ph-mi { font-size: 0.5rem; color: var(--gray); text-align: center; }
+  .ph-mi i { font-size: 0.65rem; display: block; margin-bottom: 1px; }
+  .ph-mi.active i, .ph-mi.active { color: var(--accent2); }
+  .app-perks { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2.5rem; }
+  .perk {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1.2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: all 0.3s;
+  }
+  .perk:hover { border-color: rgba(139,92,246,0.4); }
+  .perk-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: rgba(139,92,246,0.12);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 1rem;
+  }
+  .perk-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .perk-desc { font-size: 0.82rem; color: var(--gray); line-height: 1.5; }
+  .store-btns { display: flex; gap: 0.8rem; margin-top: 2.5rem; flex-wrap: wrap; }
+  .store-btn {
+    display: flex; align-items: center; gap: 0.7rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1.2rem;
+    text-decoration: none; color: var(--white);
+    transition: all 0.3s;
+  }
+  .store-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .store-btn i { font-size: 1.4rem; }
+  .store-btn-text { line-height: 1.3; }
+  .store-btn-sub { font-size: 0.65rem; color: var(--gray); }
+  .store-btn-name { font-size: 0.9rem; font-weight: 700; }
+
+  /* ── TESTIMONIALS ── */
+  #reviews { background: var(--black); }
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 4rem;
+  }
+  .review-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .review-card:hover { border-color: rgba(139,92,246,0.4); transform: translateY(-3px); }
+  .review-quote {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: var(--accent);
+    opacity: 0.2;
+    line-height: 1;
+    position: absolute;
+    top: 1rem; right: 1.5rem;
+  }
+  .review-stars { color: var(--accent2); font-size: 0.85rem; margin-bottom: 1rem; letter-spacing: 2px; }
+  .review-text { font-size: 0.9rem; color: var(--gray); line-height: 1.7; margin-bottom: 1.5rem; }
+  .review-author { display: flex; align-items: center; gap: 0.8rem; }
+  .author-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.85rem; color: var(--black);
+    flex-shrink: 0;
+  }
+  .author-name { font-weight: 700; font-size: 0.9rem; }
+  .author-meta { font-size: 0.75rem; color: var(--gray); }
+
+  /* ── CTA BANNER ── */
+  #cta {
+    padding: 6rem 5%;
+    background: linear-gradient(135deg, #121212 0%, #1A1A1A 100%);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+  #cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(139,92,246,0.1) 0%, transparent 70%);
+  }
+  .cta-content { position: relative; z-index: 1; }
+  .cta-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 6rem);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+  .cta-title em { color: var(--accent2); font-style: normal; }
+  .cta-desc { color: var(--gray); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2.5rem; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #0e0e0e;
+    padding: 4rem 5% 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+    display: block;
+    text-decoration: none;
+    color: var(--white);
+  }
+  .footer-logo span { color: var(--accent2); }
+  .footer-about { font-size: 0.85rem; color: var(--gray); line-height: 1.7; margin-bottom: 1.5rem; }
+  .footer-socials { display: flex; gap: 0.8rem; }
+  .social-btn {
+    width: 36px; height: 36px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gray);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .social-btn:hover { background: var(--accent2); border-color: var(--accent2); color: var(--black); }
+  .footer-col-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--white); margin-bottom: 1.2rem;
+  }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
+  .footer-links a {
+    font-size: 0.85rem; color: var(--gray);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent2); }
+  .footer-bottom {
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; color: var(--gray);
+  }
+  .footer-bottom a { color: var(--accent2); text-decoration: none; }
+
+  /* ── MOBILE ── */
+  @media(max-width: 900px) {
+    .hero-tv { display: none; }
+    .hero-stats { position: relative; right: auto; bottom: auto; flex-wrap: wrap; margin-top: 2.5rem; }
+    #hero { min-height: auto; padding: 8rem 5% 4rem; flex-direction: column; }
+    .why-grid, .app-grid { grid-template-columns: 1fr; }
+    .steps-grid { grid-template-columns: 1fr 1fr; }
+    .steps-grid::before { display: none; }
+    .features-bento { grid-template-columns: 1fr; }
+    .bento-card.large { grid-column: span 1; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .plan-card.popular { transform: scale(1); }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-bottom { flex-direction: column; gap: 0.8rem; text-align: center; }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .features-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .why-features { grid-template-columns: 1fr; }
+  }
+  @media(max-width: 600px) {
+    .steps-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .app-phones { gap: 0.8rem; }
+    .phone-frame { width: 110px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">Burn<span>mate</span></a>
+  <ul class="nav-links">
+    <li><a href="#why">About</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#app">App</a></li>
+    <li><a href="#cta" class="nav-cta">Pre-Order</a></li>
+  </ul>
+  <div class="hamburger" onclick="this.classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span></span> Now Available — Gen 2 Hardware
+    </div>
+    <h1 class="hero-title">
+      YOUR TV.<br>
+      YOUR <em>TRAINER.</em><br>
+      <span class="outline">YOUR GOALS.</span>
+    </h1>
+    <p class="hero-sub">Burnmate plugs into your TV and uses AI to track your movements, correct your posture in real-time, and talk to you like a personal trainer — from your living room.</p>
+    <div class="hero-actions">
+      <a href="#pricing" class="btn-primary"><i class="fas fa-bolt"></i> Pre-Order Now</a>
+      <a href="#how" class="btn-outline"><i class="fas fa-play"></i> See How It Works</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="num">98%</div>
+        <div class="label">Posture Accuracy</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">50K+</div>
+        <div class="label">Active Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">4.9★</div>
+        <div class="label">App Rating</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TV Mockup -->
+  <div class="hero-tv">
+    <div class="tv-frame">
+      <div class="tv-screen">
+        <div class="tv-scan"></div>
+        <div class="tv-hud-top">
+          <div class="hud-chip">● AI LIVE</div>
+          <div class="hud-metrics">
+            <div class="hud-m">HR <span>142</span> bpm</div>
+            <div class="hud-m">CAL <span>318</span></div>
+            <div class="hud-m">00:<span>32</span>:10</div>
+          </div>
+        </div>
+        <div class="tv-figure">
+          <svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="100" cy="140" rx="60" ry="90" fill="rgba(139,92,246,0.05)"/>
+            <circle cx="100" cy="40" r="22" fill="#1e2230" stroke="#8B5CF6" stroke-width="2"/>
+            <circle cx="94" cy="37" r="2.5" fill="#8B5CF6"/>
+            <circle cx="106" cy="37" r="2.5" fill="#8B5CF6"/>
+            <path d="M 93 46 Q 100 52 107 46" stroke="#84CC16" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <line x1="100" y1="62" x2="100" y2="140" stroke="#8B5CF6" stroke-width="3" stroke-linecap="round"/>
+            <line x1="100" y1="80" x2="58" y2="55" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="58" y1="55" x2="40" y2="30" stroke="#84CC16" stroke-width="2" stroke-linecap="round"/>
+            <line x1="100" y1="80" x2="142" y2="60" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="142" y1="60" x2="160" y2="40" stroke="#84CC16" stroke-width="2" stroke-linecap="round"/>
+            <line x1="100" y1="140" x2="78" y2="200" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="78" y1="200" x2="60" y2="240" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"/>
+            <line x1="100" y1="140" x2="122" y2="200" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="122" y1="200" x2="140" y2="240" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="100" cy="80" r="4" fill="#8B5CF6"/>
+            <circle cx="100" cy="140" r="4" fill="#8B5CF6"/>
+            <circle cx="58" cy="55" r="3" fill="#84CC16"/>
+            <circle cx="142" cy="60" r="3" fill="#84CC16"/>
+            <circle cx="78" cy="200" r="3" fill="#84CC16"/>
+            <circle cx="122" cy="200" r="3" fill="#84CC16"/>
+            <line x1="58" y1="55" x2="35" y2="28" stroke="rgba(132,204,22,0.2)" stroke-width="1" stroke-linecap="round"/>
+            <line x1="58" y1="55" x2="30" y2="26" stroke="rgba(132,204,22,0.1)" stroke-width="1" stroke-linecap="round"/>
+            <rect x="34" y="26" width="140" height="220" rx="4" stroke="rgba(139,92,246,0.3)" stroke-width="1" stroke-dasharray="4 4"/>
+            <line x1="100" y1="15" x2="100" y2="270" stroke="rgba(139,92,246,0.1)" stroke-width="1" stroke-dasharray="3 6"/>
+          </svg>
+        </div>
+        <div class="tv-hud-bottom">
+          <div class="ai-bubble">
+            <div class="ai-avatar">AI</div>
+            <div class="ai-text">
+              <strong>Great form!</strong> Keep your left arm higher — rotate from your shoulder for maximum range.<br>
+              <div class="skeleton-bars">
+                <div class="sk-bar"></div>
+                <div class="sk-bar"></div>
+                <div class="sk-bar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tv-stand"></div>
+    <div class="tv-base"></div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section id="why">
+  <div class="section-label">Why Burnmate?</div>
+  <div class="why-grid">
+    <div>
+      <h2 class="section-title">PUSH YOUR <em>LIMITS</em> FORWARD</h2>
+      <p class="section-desc">No gym membership. No expensive equipment. No trainer appointments. Burnmate brings elite-level fitness coaching to your living room via a compact device that plugs into any TV.</p>
+    </div>
+    <div class="why-features">
+      <div class="feature-card">
+        <div class="fc-icon"><i class="fas fa-tv"></i></div>
+        <div class="fc-title">TV-Connected Device</div>
+        <div class="fc-desc">Plugs directly into any HDMI-capable TV. Setup takes under 2 minutes — no tech skills needed.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon"><i class="fas fa-robot"></i></div>
+        <div class="fc-title">AI Personal Trainer</div>
+        <div class="fc-desc">Real-time voice coaching that sees your movements and gives feedback just like a human trainer would.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon"><i class="fas fa-person-running"></i></div>
+        <div class="fc-title">Posture Tracking</div>
+        <div class="fc-desc">Computer vision maps 32 body keypoints to detect alignment, posture errors, and rep counts instantly.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon"><i class="fas fa-utensils"></i></div>
+        <div class="fc-title">Diet Intelligence</div>
+        <div class="fc-desc">Personalized meal plans based on your BMI, health conditions, caloric needs, and fitness targets.</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;margin-top:4rem;">
+    <div class="device-showcase" style="width:380px;height:380px;">
+      <div class="device-ring"></div>
+      <div class="device-ring"></div>
+      <div class="device-ring"></div>
+      <div class="device-box">
+        <div class="device-led"></div>
+        <i class="fas fa-microchip device-icon"></i>
+        <div class="device-label">Burnmate<br>Hardware</div>
+        <div class="device-port"></div>
+      </div>
+      <div class="floating-tag tag-1"><i class="fas fa-wifi"></i> Wi-Fi + BT 5.2</div>
+      <div class="floating-tag tag-2"><i class="fas fa-camera"></i> 120° Wide Lens</div>
+      <div class="floating-tag tag-3"><i class="fas fa-microphone"></i> AI Voice</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div style="text-align:center;">
+    <div class="section-label">Simple Setup</div>
+    <h2 class="section-title">HOW IT <em>WORKS</em></h2>
+    <p class="section-desc" style="margin:0 auto;">From box to workout in minutes. Burnmate is designed for zero friction — just plug, pair, and move.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card"><div class="step-num">01</div><div class="step-icon-wrap"><i class="fas fa-plug"></i></div><div class="step-title">Plug Into Your TV</div><div class="step-desc">Connect the Burnmate device to any HDMI port. It powers on instantly with a smart TV interface.</div></div>
+    <div class="step-card"><div class="step-num">02</div><div class="step-icon-wrap"><i class="fas fa-mobile-alt"></i></div><div class="step-title">Sync the App</div><div class="step-desc">Pair with your phone in one tap. Enter your health data — weight, BMI, conditions, and goals.</div></div>
+    <div class="step-card"><div class="step-num">03</div><div class="step-icon-wrap"><i class="fas fa-brain"></i></div><div class="step-title">AI Builds Your Plan</div><div class="step-desc">Our AI generates a custom workout and nutrition schedule tailored specifically to you — instantly.</div></div>
+    <div class="step-card"><div class="step-num">04</div><div class="step-icon-wrap"><i class="fas fa-fire"></i></div><div class="step-title">Train & Transform</div><div class="step-desc">Work out with real-time voice coaching, posture corrections, and progress tracking every session.</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header">
+    <div><div class="section-label">Core Features</div><h2 class="section-title">WHAT WE <em>OFFER</em></h2></div>
+    <div class="features-tabs"><button class="ftab active">Hardware</button><button class="ftab">AI Coach</button><button class="ftab">Nutrition</button></div>
+  </div>
+  <div class="features-bento">
+    <div class="bento-card tall"><div class="bc-icon"><i class="fas fa-person-walking"></i></div><div class="bc-title">32-Point Motion Capture</div><div class="bc-desc">Burnmate's wide-angle camera tracks 32 body keypoints at 60 fps — shoulders, hips, knees, ankles, and more. It detects every rep, every angle, and every posture deviation in real time with millimeter precision.</div><div class="bc-visual"><div class="posture-lines"><div class="pl-item"><div class="pl-icon">🦾</div><div class="pl-label">Shoulders</div><div class="pl-status good">Aligned</div></div><div class="pl-item"><div class="pl-icon">🦵</div><div class="pl-label">Knees</div><div class="pl-status warn">Adjust</div></div><div class="pl-item"><div class="pl-icon">🦶</div><div class="pl-label">Feet</div><div class="pl-status good">Good</div></div><div class="pl-item"><div class="pl-icon">⬆️</div><div class="pl-label">Spine</div><div class="pl-status good">Neutral</div></div></div></div></div>
+    <div class="bento-card"><div class="bc-icon green"><i class="fas fa-microphone-lines"></i></div><div class="bc-title">AI Voice Trainer</div><div class="bc-desc">Conversational AI coach that motivates, corrects, and adapts to your performance — session by session.</div></div>
+    <div class="bento-card"><div class="bc-icon red"><i class="fas fa-heart-pulse"></i></div><div class="bc-title">Biometric Awareness</div><div class="bc-desc">Syncs with wearables for heart rate, HRV, and recovery metrics to personalize workout intensity.</div></div>
+    <div class="bento-card large"><div class="bc-icon"><i class="fas fa-chart-line"></i></div><div class="bc-title">Weekly Progress Analytics</div><div class="bc-desc">Track strength gains, flexibility, calorie burn, and posture improvement scores across weeks.</div><div class="bc-visual"><div class="mini-chart"><div class="mc-bar"></div><div class="mc-bar"></div><div class="mc-bar"></div><div class="mc-bar"></div><div class="mc-bar"></div><div class="mc-bar"></div><div class="mc-bar"></div></div></div></div>
+    <div class="bento-card"><div class="bc-icon green"><i class="fas fa-bowl-food"></i></div><div class="bc-title">Personalized Diet Plans</div><div class="bc-desc">AI-generated meal plans based on your BMI, health conditions, allergies, and fitness goals. Updated weekly.</div><div class="bc-visual"><div class="diet-ring"><div class="diet-ring-inner">Protein<br>Carbs<br>Fat</div></div></div></div>
+    <div class="bento-card"><div class="bc-icon red"><i class="fas fa-sliders"></i></div><div class="bc-title">Adaptive Workouts</div><div class="bc-desc">Plans that evolve with you. Burnmate adjusts difficulty, rest times, and exercise selection automatically.</div></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing"><div style="text-align:center;"><div class="section-label">Transparent Pricing</div><h2 class="section-title">CHOOSE YOUR <em>PLAN</em></h2><p class="section-desc" style="margin:0 auto;">One-time hardware purchase + optional subscription. No hidden fees.</p></div>
+<div class="pricing-grid">
+  <div class="plan-card"><div class="plan-name">Starter</div><div class="plan-price"><sup>$</sup>149</div><div class="plan-period">one-time hardware + free app</div><div class="plan-divider"></div><ul class="plan-features"><li><i class="fas fa-check"></i> Burnmate Hardware Device</li><li><i class="fas fa-check"></i> Basic AI Workout Plans</li><li><i class="fas fa-check"></i> Motion Tracking (10 keypoints)</li><li><i class="fas fa-check"></i> Mobile App Access</li><li class="off"><i class="fas fa-times"></i> AI Voice Coaching</li><li class="off"><i class="fas fa-times"></i> Diet Planning</li><li class="off"><i class="fas fa-times"></i> Adaptive Plans</li></ul><a href="#" class="btn-plan">Get Started</a></div>
+  <div class="plan-card popular"><div class="popular-badge">Most Popular</div><div class="plan-name">Pro</div><div class="plan-price"><sup>$</sup>199</div><div class="plan-period">hardware + $9.99/mo subscription</div><div class="plan-divider"></div><ul class="plan-features"><li><i class="fas fa-check"></i> Burnmate Hardware Device</li><li><i class="fas fa-check"></i> Full AI Workout Library</li><li><i class="fas fa-check"></i> 32-Point Motion Capture</li><li><i class="fas fa-check"></i> AI Voice Personal Trainer</li><li><i class="fas fa-check"></i> Personalized Diet Plans</li><li><i class="fas fa-check"></i> Adaptive Weekly Plans</li><li class="off"><i class="fas fa-times"></i> Family Profiles (up to 5)</li></ul><a href="#" class="btn-plan">Pre-Order Pro</a></div>
+  <div class="plan-card"><div class="plan-name">Family</div><div class="plan-price"><sup>$</sup>199</div><div class="plan-period">hardware + $19.99/mo subscription</div><div class="plan-divider"></div><ul class="plan-features"><li><i class="fas fa-check"></i> Burnmate Hardware Device</li><li><i class="fas fa-check"></i> Everything in Pro</li><li><i class="fas fa-check"></i> 5 Individual Profiles</li><li><i class="fas fa-check"></i> Kids Safety Mode</li><li><i class="fas fa-check"></i> Shared Diet Plans</li><li><i class="fas fa-check"></i> Priority Support</li><li><i class="fas fa-check"></i> Early Feature Access</li></ul><a href="#" class="btn-plan">Get Family Plan</a></div>
+</div></section>
+
+<!-- APP -->
+<section id="app"><div class="app-grid"><div class="app-phones"><div class="phone-frame"><div class="phone-screen"><div class="ph-topbar"><div class="ph-logo">Burnmate</div><div class="ph-status"></div></div><div class="ph-card" style="margin-top:0.5rem"><div class="ph-card-label">Today's Goal</div><div class="ph-card-val">480</div><div class="ph-card-sub">kcal burned</div><div class="ph-progress"><div class="ph-prog-bar"><div class="ph-prog-fill" style="width:66%"></div></div></div></div><div class="ph-card" style="margin-top:0.4rem"><div class="ph-card-label">AI Coach Says</div><div style="font-size:0.45rem;color:#8a8f9e;line-height:1.4;margin-top:0.2rem;">Great session! Your squat depth improved by 12% this week. Ready for today's core routine?</div></div><div class="ph-card"><div class="ph-card-label">Nutrition</div><div class="ph-card-val" style="font-size:0.8rem;color:#84CC16;">2,100 kcal</div><div class="ph-card-sub">Daily target • 1,640 consumed</div></div><div class="ph-menu"><div class="ph-mi active"><i class="fas fa-home"></i>Home</div><div class="ph-mi"><i class="fas fa-chart-bar"></i>Stats</div><div class="ph-mi"><i class="fas fa-utensils"></i>Diet</div><div class="ph-mi"><i class="fas fa-user"></i>Profile</div></div></div></div><div class="phone-frame"><div class="phone-screen"><div class="ph-topbar"><div class="ph-logo" style="color:#84CC16">Diet Plan</div><div class="ph-status" style="background:#8B5CF6;box-shadow:0 0 6px #8B5CF6"></div></div><div class="ph-card" style="margin-top:0.5rem"><div class="ph-card-label">BMI Score</div><div class="ph-card-val">22.4</div><div class="ph-card-sub">Healthy range</div></div><div class="ph-card"><div class="ph-card-label">Breakfast</div><div style="font-size:0.45rem;color:#f5f5f0;margin-top:0.2rem;">Oats + Banana + Almonds</div><div style="font-size:0.4rem;color:#84CC16;">380 kcal · 18g protein</div></div><div class="ph-card"><div class="ph-card-label">Lunch</div><div style="font-size:0.45rem;color:#f5f5f0;margin-top:0.2rem;">Grilled Chicken + Quinoa</div><div style="font-size:0.4rem;color:#84CC16;">540 kcal · 42g protein</div></div><div class="ph-card"><div class="ph-card-label">Weekly Streak</div><div class="ph-card-val" style="color:#8B5CF6">🔥 14</div><div class="ph-card-sub">Days on track</div></div><div class="ph-menu"><div class="ph-mi"><i class="fas fa-home"></i>Home</div><div class="ph-mi"><i class="fas fa-chart-bar"></i>Stats</div><div class="ph-mi active"><i class="fas fa-utensils"></i>Diet</div><div class="ph-mi"><i class="fas fa-user"></i>Profile</div></div></div></div></div><div><div class="section-label">Mobile Application</div><h2 class="section-title">YOUR FITNESS<br><em>IN YOUR POCKET</em></h2><p class="section-desc">The Burnmate app is the command center for your health journey. Sync with your TV device, track workouts, review diet plans, and chat with your AI coach — all from your phone.</p><div class="app-perks"><div class="perk"><div class="perk-icon"><i class="fas fa-sync-alt"></i></div><div><div class="perk-title">Seamless TV Sync</div><div class="perk-desc">Start a workout from the app, see it on your TV, get coached in real time — all synced instantly.</div></div></div><div class="perk"><div class="perk-icon"><i class="fas fa-salad"></i></div><div><div class="perk-title">Smart Meal Tracker</div><div class="perk-desc">Log meals by photo or voice, get AI macro breakdowns, and see how they fit your daily targets.</div></div></div><div class="perk"><div class="perk-icon"><i class="fas fa-bell"></i></div><div><div class="perk-title">Intelligent Reminders</div><div class="perk-desc">Smart nudges based on your schedule, energy, and recovery state — not generic alerts.</div></div></div></div><div class="store-btns"><a href="#" class="store-btn"><i class="fab fa-apple"></i><div class="store-btn-text"><div class="store-btn-sub">Download on the</div><div class="store-btn-name">App Store</div></div></a><a href="#" class="store-btn"><i class="fab fa-google-play"></i><div class="store-btn-text"><div class="store-btn-sub">Get it on</div><div class="store-btn-name">Google Play</div></div></a></div></div></div></section>
+
+<!-- REVIEWS -->
+<section id="reviews"><div style="text-align:center;"><div class="section-label">Real Results</div><h2 class="section-title">WHAT OUR <em>USERS SAY</em></h2></div><div class="reviews-grid"><div class="review-card"><div class="review-quote">"</div><div class="review-stars">★★★★★</div><p class="review-text">I lost 8 kg in 3 months without leaving my house. The AI trainer actually sounds encouraging — not robotic. The posture feedback was something I never knew I needed.</p><div class="review-author"><div class="author-avatar">PR</div><div><div class="author-name">Priya R.</div><div class="author-meta">Hyderabad · Lost 8 kg in 90 days</div></div></div></div><div class="review-card"><div class="review-quote">"</div><div class="review-stars">★★★★★</div><p class="review-text">The diet plan feature is unreal. It accounts for my Type 2 diabetes and lactose intolerance and still gives me interesting, practical meal plans that I actually enjoy.</p><div class="review-author"><div class="author-avatar">SK</div><div><div class="author-name">Suresh K.</div><div class="author-meta">Bangalore · Managing T2 Diabetes</div></div></div></div><div class="review-card"><div class="review-quote">"</div><div class="review-stars">★★★★★</div><p class="review-text">My whole family uses it. We each have our own profile — from my 60-year-old mom's rehab exercises to my teenager's HIIT routines. Burnmate handled all of it perfectly.</p><div class="review-author"><div class="author-avatar">AM</div><div><div class="author-name">Ananya M.</div><div class="author-meta">Chennai · Family Plan User</div></div></div></div></div></section>
+
+<!-- CTA BANNER -->
+<section id="cta"><div class="cta-content"><div class="section-label" style="text-align:center;display:block;">Limited Pre-Order</div><h2 class="cta-title">TRAIN SMARTER.<br><em>LIVE STRONGER.</em></h2><p class="cta-desc">Join 50,000+ users already transforming their fitness at home. Pre-order now and get 3 months of Pro subscription free.</p><div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;"><a href="#pricing" class="btn-primary" style="font-size:1.1rem;padding:1.1rem 2.8rem;"><i class="fas fa-bolt"></i> Pre-Order Now</a><a href="#features" class="btn-outline" style="font-size:1.1rem;padding:1.1rem 2.8rem;">Learn More</a></div></div></section>
+
+<!-- FOOTER -->
+<footer><div class="footer-grid"><div><a href="#" class="footer-logo">Burn<span>mate</span></a><p class="footer-about">AI-powered TV fitness hardware that tracks your movements, coaches you in real time, and builds personalized diet plans — right from your living room.</p><div class="footer-socials"><a href="#" class="social-btn"><i class="fab fa-instagram"></i></a><a href="#" class="social-btn"><i class="fab fa-twitter"></i></a><a href="#" class="social-btn"><i class="fab fa-youtube"></i></a><a href="#" class="social-btn"><i class="fab fa-linkedin-in"></i></a></div></div><div><div class="footer-col-title">Product</div><ul class="footer-links"><li><a href="#why">About Burnmate</a></li><li><a href="#how">How It Works</a></li><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#">Hardware Specs</a></li></ul></div><div><div class="footer-col-title">Support</div><ul class="footer-links"><li><a href="#">Help Center</a></li><li><a href="#">Setup Guide</a></li><li><a href="#">Compatibility</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Warranty</a></li></ul></div><div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="#">hello@burnmate.ai</a></li><li><a href="#">+91 98765 43210</a></li><li><a href="#">Hyderabad, India</a></li><li style="margin-top:1rem;"><div class="footer-col-title" style="margin-bottom:0.8rem;">Newsletter</div><div style="display:flex;gap:0.5rem;"><input type="email" placeholder="Your email" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:2px;padding:0.5rem 0.8rem;color:#fff;font-size:0.8rem;outline:none;flex:1;font-family:'Barlow',sans-serif;"><button style="background:var(--accent2);border:none;border-radius:2px;padding:0.5rem 0.8rem;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;"><i class="fas fa-arrow-right"></i></button></div></li></ul></div></div><div class="footer-bottom"><div>© 2026 Burnmate Technologies. All rights reserved.</div><div><a href="#">Privacy Policy</a> &nbsp;·&nbsp; <a href="#">Terms of Service</a> &nbsp;·&nbsp; <a href="#">Cookies</a></div></div></footer>
+
+<script>
+  window.addEventListener('scroll', () => { document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60); });
+  document.querySelectorAll('a[href^="#"]').forEach(a => { a.addEventListener('click', e => { const target = document.querySelector(a.getAttribute('href')); if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); });
+  document.querySelectorAll('.ftab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }); });
+  const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; } }); }, { threshold: 0.1 });
+  document.querySelectorAll('.feature-card, .step-card, .plan-card, .review-card, .bento-card, .perk').forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.6s ease, transform 0.6s ease'; observer.observe(el); });
+</script>
+</body>
+</html>
