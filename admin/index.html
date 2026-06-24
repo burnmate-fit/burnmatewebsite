@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>BurnMate · Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        accent: '#84CC16', accentDim: '#5d8f10',
+        ink: '#0d0f0c', panel: '#16181400', surface: '#1b1e18',
+        line: '#2a2e25', danger: '#FF4757',
+      } } }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background:#0d0f0c; color:#e7eadf; }
+    .nav-item.active { background:#1b1e18; color:#84CC16; border-color:#2a2e25; }
+    .nav-item.active .dot { opacity:1; }
+    ::-webkit-scrollbar { width:10px; height:10px; }
+    ::-webkit-scrollbar-thumb { background:#2a2e25; border-radius:6px; }
+    .tab.active { color:#84CC16; border-color:#84CC16; }
+    pre, code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+  </style>
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  } }
+  </script>
+</head>
+<body class="min-h-screen">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-60 shrink-0 border-r border-line bg-[#111310] flex flex-col">
+      <div class="px-5 py-5 flex items-center gap-2 border-b border-line">
+        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-ink font-extrabold">B</div>
+        <div>
+          <div class="font-bold leading-tight">BurnMate</div>
+          <div class="text-[11px] text-neutral-500 -mt-0.5">admin panel</div>
+        </div>
+      </div>
+      <nav id="nav" class="p-3 space-y-1 flex-1"></nav>
+      <div class="p-3 border-t border-line text-[11px] text-neutral-500">
+        <div id="status-dot" class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-neutral-600"></span><span>checking…</span>
+        </div>
+        <div class="mt-1 text-neutral-600" id="api-base"></div>
+      </div>
+    </aside>
+    <!-- Main -->
+    <main class="flex-1 min-w-0">
+      <div id="view" class="p-8 max-w-[1200px] mx-auto"></div>
+    </main>
+  </div>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
