@@ -37,4 +37,6 @@ export const api = {
   deleteExercise: (slug) => req(`/exercises/${slug}`, { method: 'DELETE' }),
   trainerConfig: (slug) => req(`/trainer/${slug}/config`),
   saveTrainerConfig: (slug, body) => req(`/trainer/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
+  trackerConfig: (slug) => req(`/tracker/${slug}/config`),
+  saveTrackerConfig: (slug, body) => req(`/tracker/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
 };

@@ -122,3 +122,78 @@ export function poseAtDepth(anim, depth) {
   const b = coerceTargets(kf.bottom || kf.stand || {});
   return buildIkPose(lerpTargets(a, b, depth), anim);
 }
+
+// ── auto-derive rep detection from the posed stickman ───────────────────────
+// rig joint → MediaPipe/BlazePose landmark name (what the CM5 tracker measures)
+export const RIG_TO_MP = {
+  l_shoulder: 'LEFT_SHOULDER', r_shoulder: 'RIGHT_SHOULDER',
+  l_elbow: 'LEFT_ELBOW', r_elbow: 'RIGHT_ELBOW',
+  l_wrist: 'LEFT_WRIST', r_wrist: 'RIGHT_WRIST',
+  l_hip: 'LEFT_HIP', r_hip: 'RIGHT_HIP',
+  l_knee: 'LEFT_KNEE', r_knee: 'RIGHT_KNEE',
+  l_ankle: 'LEFT_ANKLE', r_ankle: 'RIGHT_ANKLE',
+};
+
+// candidate measurable angles (joint at B for the chain A-B-C), both sides
+const ANGLE_CANDIDATES = [
+  { joint: 'knee', l: ['l_hip', 'l_knee', 'l_ankle'], r: ['r_hip', 'r_knee', 'r_ankle'] },
+  { joint: 'elbow', l: ['l_shoulder', 'l_elbow', 'l_wrist'], r: ['r_shoulder', 'r_elbow', 'r_wrist'] },
+  { joint: 'hip', l: ['l_shoulder', 'l_hip', 'l_knee'], r: ['r_shoulder', 'r_hip', 'r_knee'] },
+  { joint: 'shoulder', l: ['l_hip', 'l_shoulder', 'l_elbow'], r: ['r_hip', 'r_shoulder', 'r_elbow'] },
+];
+
+// 3D angle (degrees) at B for the points A-B-C
+export function angle3d(A, B, C) {
+  const ba = sub(A, B), bc = sub(C, B);
+  const m = len(ba) * len(bc);
+  if (m < 1e-9) return 180;
+  return Math.acos(Math.max(-1, Math.min(1, dot(ba, bc) / m))) * 180 / Math.PI;
+}
+
+function angleOf(pose, tri) { return angle3d(pose[tri[0]], pose[tri[1]], pose[tri[2]]); }
+
+// Given the Start and Success poses (as keyframe target dicts), find the joint
+// whose angle changes most (the rep "direction") and the down/up thresholds.
+export function deriveRep(startTargets, successTargets, anim, forcedJoint = null) {
+  const start = buildIkPose(coerceTargets(startTargets), anim);
+  const success = buildIkPose(coerceTargets(successTargets), anim);
+  let best = null;
+  for (const c of ANGLE_CANDIDATES) {
+    // average L/R so symmetric moves score cleanly
+    const a0 = (angleOf(start, c.l) + angleOf(start, c.r)) / 2;
+    const a1 = (angleOf(success, c.l) + angleOf(success, c.r)) / 2;
+    const delta = Math.abs(a1 - a0);
+    const cand = { ...c, a0, a1, delta };
+    if (forcedJoint) { if (c.joint === forcedJoint) best = cand; }
+    else if (!best || delta > best.delta) best = cand;
+  }
+  if (!best) return null;
+  const down = Math.round(Math.min(best.a0, best.a1));
+  const up = Math.round(Math.max(best.a0, best.a1));
+  return {
+    joint: best.joint,
+    delta: Math.round(best.delta),
+    down_angle: down,
+    up_angle: up,
+    joints_mp: { left: best.l.map((j) => RIG_TO_MP[j]), right: best.r.map((j) => RIG_TO_MP[j]) },
+  };
+}
+
+const STRICTNESS = { loose: 18, medium: 12, strict: 7 };
+
+// Build a CM5 tracker (rep-detection) config from the derived rep + strictness.
+export function buildTrackerConfig(slug, derived, strictness = 'medium') {
+  const tol = STRICTNESS[strictness] ?? 12;
+  return {
+    name: slug,
+    joints: derived.joints_mp,
+    thresholds: { down_angle: derived.down_angle, up_angle: derived.up_angle },
+    trajectory: { buffer: 6 },
+    tuning: {
+      confirmation_frames: 3, rep_count_mode: 'rebound', rebound_deg: 10,
+      count_confirm: 2, depth_target_angle: derived.down_angle, lean_max_deg: 55,
+      match_tolerance_deg: tol,
+    },
+    feedback_rules: [],
+  };
+}
