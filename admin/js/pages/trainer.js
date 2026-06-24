@@ -33,8 +33,8 @@ export async function renderTrainer(view) {
   try { exercises = await api.exercises(); }
   catch (e) { slot.replaceChildren(errorBox(e)); return; }
 
-  const stage = el('div', { class: 'rounded-xl border border-line bg-ink overflow-hidden', style: 'height:540px' });
-  const panel = el('div', {});
+  const stage = el('div', { class: 'rounded-xl border border-line bg-ink overflow-hidden min-w-0 relative', style: 'height:560px' });
+  const panel = el('div', { class: 'min-w-0' });
   const select = el('select', { class: 'bg-ink border border-line rounded-lg px-3 py-2 text-sm focus:border-accent outline-none' },
     el('option', { value: '' }, '— pick an exercise —'),
     ...exercises.filter((e) => e.trainer_config).map((e) => el('option', { value: e.slug }, e.display_name || e.slug)));
@@ -42,7 +42,7 @@ export async function renderTrainer(view) {
 
   slot.replaceChildren(
     el('div', { class: 'flex items-center gap-3 mb-4' }, select, newBtn),
-    el('div', { class: 'grid lg:grid-cols-[1.5fr_1fr] gap-6' }, card(stage), panel),
+    el('div', { class: 'grid lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-6 items-start' }, stage, panel),
   );
 
   player = new AvatarPlayer(stage);
@@ -95,7 +95,7 @@ async function previewMode(panel, slug, exercises, stage) {
 // exercise's saved tracker config (same thresholds the CM5 uses).
 async function startWebcamTest(stage, slug, testBtn) {
   player.pause();
-  const host = stage.parentElement; host.style.position = 'relative';
+  const host = stage; // stage is position:relative — overlay covers just the stage
   testBtn.disabled = true;
   const overlay = el('div', { class: 'absolute inset-0 bg-ink z-10' });
   const stopBtn = el('button', { class: 'absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 bg-danger text-white font-semibold text-sm px-3 py-2 rounded-lg' }, 'Stop test');
@@ -135,13 +135,11 @@ function editMode(panel, existing, exercises) {
   function renderTabs() {
     tabBar.replaceChildren();
     steps().forEach((label, i) => {
-      tabBar.append(
-        i ? el('span', { class: 'text-neutral-600' }, '→') : null,
-        el('button', {
-          class: `px-3 py-1.5 rounded-lg text-sm font-medium border ${label === current ? 'border-accent text-accent bg-accent/10' : 'border-line text-neutral-400'}`,
-          onclick: () => selectStep(label),
-        }, label),
-      );
+      if (i) tabBar.append(el('span', { class: 'text-neutral-600' }, '→'));
+      tabBar.append(el('button', {
+        class: `px-3 py-1.5 rounded-lg text-sm font-medium border ${label === current ? 'border-accent text-accent bg-accent/10' : 'border-line text-neutral-400'}`,
+        onclick: () => selectStep(label),
+      }, label));
     });
     if (!hasS2()) tabBar.append(
       el('button', { class: 'px-2 py-1.5 rounded-lg text-sm border border-dashed border-line text-neutral-500 hover:text-accent',

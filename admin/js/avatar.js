@@ -35,7 +35,8 @@ export class AvatarPlayer {
     this.camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    this.renderer.setSize(w, h);
+    this.renderer.setSize(w, h, false); // false → don't write px style; canvas fills container via CSS
+    Object.assign(this.renderer.domElement.style, { width: '100%', height: '100%', display: 'block' });
     this.container.append(this.renderer.domElement);
 
     this.scene.add(new THREE.HemisphereLight(0xbfe06a, 0x101410, 0.9));
@@ -301,7 +302,7 @@ export class AvatarPlayer {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h); this._renderOnce();
+    this.renderer.setSize(w, h, false); this._renderOnce();
   }
   dispose() { this.pause(); this.renderer.dispose(); this.renderer.domElement.remove(); }
 }
