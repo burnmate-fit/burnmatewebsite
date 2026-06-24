@@ -7,6 +7,16 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/exampl
 import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
 import { STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets, lerpTargets, buildIkPose } from './solver.js';
 
+// editor carry-along: moving a joint drags these explicit targets WITH it
+// (a bone-hierarchy feel without breaking the flat target data the CM5 reads).
+const SUBTREE = {
+  pelvis: ['chest', 'l_wrist', 'r_wrist', 'l_ankle', 'r_ankle', 'l_toe', 'r_toe'], // whole body
+  chest: ['l_wrist', 'r_wrist'],   // upper body (head/neck/shoulders derive from chest)
+  l_ankle: ['l_toe'], r_ankle: ['r_toe'],
+};
+// rigid bone lengths so the body can't over-stretch (human limits)
+const SPINE_LEN = 0.35;   // pelvis ↔ chest rest distance
+
 // ── three.js renderer (math lives in solver.js for parity-testability) ──────
 export class AvatarPlayer {
   constructor(container) {
@@ -56,7 +66,10 @@ export class AvatarPlayer {
     this.gizmo = new TransformControls(this.camera, this.renderer.domElement);
     this.gizmo.setSize(0.62);
     this.gizmo.addEventListener('change', () => this._renderOnce());
-    this.gizmo.addEventListener('dragging-changed', (e) => { this.orbit.enabled = this.editing && !e.value; });
+    this.gizmo.addEventListener('dragging-changed', (e) => {
+      this.orbit.enabled = this.editing && !e.value;
+      this._dragLast = (e.value && this.gizmo.object) ? this.gizmo.object.position.clone() : null;
+    });
     this.gizmo.addEventListener('objectChange', () => this._onGizmoMove());
     this.scene.add(this.gizmo);
 
@@ -164,14 +177,32 @@ export class AvatarPlayer {
     if (this.onSelect) this.onSelect(this.selected);
   }
   setGizmoMode(mode) { if (this.gizmo) this.gizmo.setMode(mode); }
-  // gizmo moved the handle → that joint becomes a destination; re-solve the body
+  // gizmo moved the handle → carry the subtree, apply human limits, re-solve
   _onGizmoMove() {
     if (!this.editing || !this.gizmo.object) return;
     const j = this.gizmo.object.userData.joint;
-    const p = this.gizmo.object.position;
+    const p = this.gizmo.object.position.clone();
+    if (!this._dragLast) this._dragLast = p.clone();
+    const d = [p.x - this._dragLast.x, p.y - this._dragLast.y, p.z - this._dragLast.z];
+    const t = this._editTargets();
+    // carry-along: shift the moved joint's subtree by the same delta
+    for (const k of (SUBTREE[j] || [])) if (t[k]) t[k] = [t[k][0] + d[0], t[k][1] + d[1], t[k][2] + d[2]];
     this._setTarget(j, [p.x, Math.max(0.03, p.y), p.z]);
-    this._applyPose(buildIkPose(this._editTargets(), this.editAnim));
+    this._constrain(t);
+    this._dragLast = p;
+    this._applyPose(buildIkPose(t, this.editAnim));
     if (this.onEdit) this.onEdit();
+  }
+
+  // human limits: rigid spine (no stretch) + keep feet on the ground.
+  // Limb over-extension is already prevented by the two-bone IK reach clamp.
+  _constrain(t) {
+    if (t.pelvis && t.chest) {
+      const dx = t.chest[0] - t.pelvis[0], dy = t.chest[1] - t.pelvis[1], dz = t.chest[2] - t.pelvis[2];
+      const L = Math.hypot(dx, dy, dz) || 1e-4, s = SPINE_LEN / L;
+      t.chest = [t.pelvis[0] + dx * s, t.pelvis[1] + dy * s, t.pelvis[2] + dz * s];
+    }
+    for (const k of ['l_ankle', 'r_ankle', 'l_toe', 'r_toe']) if (t[k]) t[k][1] = Math.max(0.03, t[k][1]);
   }
 
   _buildMeshes() {
