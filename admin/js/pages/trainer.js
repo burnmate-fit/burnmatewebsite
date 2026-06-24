@@ -206,7 +206,7 @@ function editMode(panel, existing, exercises) {
   panel.replaceChildren(
     card(
       el('div', { class: 'flex items-center gap-2 mb-3' }, pill(isNew ? 'new exercise' : slug, 'accent'),
-        el('span', { class: 'text-xs text-neutral-500' }, 'drag the green handles to pose each step')),
+        el('span', { class: 'text-xs text-neutral-500' }, 'click a joint → drag arrows to move · drag empty space to orbit')),
       tabBar,
       el('div', { class: 'flex items-center gap-3 mt-4 flex-wrap' },
         el('label', { class: 'flex items-center gap-1.5 text-sm text-neutral-300' }, mirror, 'Mirror L/R'),

@@ -3,6 +3,8 @@
 // the browser renders the SAME pose the board does. This is the "fetch a
 // config, play it" core of the dynamic trainer.
 import * as THREE from 'three';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
 import { STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets, lerpTargets, buildIkPose } from './solver.js';
 
 // ── three.js renderer (math lives in solver.js for parity-testability) ──────
@@ -41,28 +43,44 @@ export class AvatarPlayer {
 
     // editing state
     this.editing = false; this.editAnim = null; this.editKf = 'stand';
-    this.mirror = true; this.onEdit = null;
+    this.mirror = true; this.onEdit = null; this.lastPose = STAND; this.selected = null;
     this.raycaster = new THREE.Raycaster();
-    this.dragJoint = null; this.dragPlane = new THREE.Plane();
-    const dom = this.renderer.domElement;
-    dom.addEventListener('pointerdown', (e) => this._onPointerDown(e));
-    dom.addEventListener('pointermove', (e) => this._onPointerMove(e));
-    window.addEventListener('pointerup', () => this._onPointerUp());
+
+    // free-orbit camera (edit mode only)
+    this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
+    this.orbit.target.set(0, 0.9, 0);
+    this.orbit.addEventListener('change', () => this._renderOnce());
+    this.orbit.enabled = false;
+
+    // move gizmo for the selected handle
+    this.gizmo = new TransformControls(this.camera, this.renderer.domElement);
+    this.gizmo.setSize(0.62);
+    this.gizmo.addEventListener('change', () => this._renderOnce());
+    this.gizmo.addEventListener('dragging-changed', (e) => { this.orbit.enabled = this.editing && !e.value; });
+    this.gizmo.addEventListener('objectChange', () => this._onGizmoMove());
+    this.scene.add(this.gizmo);
+
+    this.renderer.domElement.addEventListener('pointerdown', (e) => this._onPointerDown(e));
 
     new ResizeObserver(() => this._resize()).observe(this.container);
     this._renderOnce();
   }
 
-  // ── editing: drag joints to shape keyframe poses ──────────────────────────
-  static DRAG_JOINTS = ['pelvis', 'chest', 'head', 'l_wrist', 'r_wrist', 'l_ankle', 'r_ankle'];
+  // ── editing: select a handle → move it with the gizmo; IK re-solves ───────
+  // Full destination rig — every major joint is a draggable destination.
+  static DRAG_JOINTS = [
+    'pelvis', 'chest', 'neck', 'head', 'l_shoulder', 'r_shoulder',
+    'l_elbow', 'r_elbow', 'l_wrist', 'r_wrist', 'l_hip', 'r_hip',
+    'l_knee', 'r_knee', 'l_ankle', 'r_ankle', 'l_toe', 'r_toe',
+  ];
 
   _buildHandles() {
     this.handleGroup = new THREE.Group(); this.scene.add(this.handleGroup);
     this.handleMeshes = [];
     for (const j of AvatarPlayer.DRAG_JOINTS) {
       const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.055, 14, 12),
-        new THREE.MeshBasicMaterial({ color: 0x84cc16, depthTest: false, transparent: true, opacity: 0.95 }));
+        new THREE.SphereGeometry(0.05, 14, 12),
+        new THREE.MeshBasicMaterial({ color: 0x84cc16, depthTest: false, transparent: true, opacity: 0.85 }));
       m.userData.joint = j; m.renderOrder = 999; m.visible = false;
       this.handleGroup.add(m); this.handleMeshes.push(m);
     }
@@ -79,11 +97,17 @@ export class AvatarPlayer {
     }
     if (!this.handleMeshes) this._buildHandles();
     this.handleGroup.visible = true;
+    this.orbit.enabled = true; this.gizmo.detach(); this.selected = null;
     this.view = this.editAnim.view || 'side'; this._applyView();
     this.setEditKeyframe(this.editAnim.keyframes.stand ? 'stand' : Object.keys(this.editAnim.keyframes)[0] || 'stand');
   }
 
-  endEdit() { this.editing = false; if (this.handleGroup) this.handleGroup.visible = false; }
+  endEdit() {
+    this.editing = false;
+    if (this.handleGroup) this.handleGroup.visible = false;
+    if (this.orbit) this.orbit.enabled = false;
+    if (this.gizmo) this.gizmo.detach();
+  }
 
   _defaultTargets() {
     const pick = ['pelvis', 'chest', 'l_wrist', 'r_wrist', 'l_ankle', 'r_ankle', 'l_toe', 'r_toe'];
@@ -102,11 +126,13 @@ export class AvatarPlayer {
   getEditedAnim() { return this.editAnim; }
 
   _placeHandles() {
-    const t = this._editTargets();
+    // place every handle at its SOLVED position (so all joints are grabbable,
+    // even ones not yet explicit destinations); skip the one being dragged.
     for (const m of this.handleMeshes) {
+      if (this.gizmo && this.gizmo.dragging && m === this.gizmo.object) continue;
       const j = m.userData.joint;
-      if (t[j]) { m.position.set(t[j][0], t[j][1], t[j][2]); m.visible = true; }
-      else m.visible = false;
+      const p = (this.lastPose && this.lastPose[j]) || STAND[j];
+      if (p) { m.position.set(p[0], p[1], p[2]); m.visible = true; } else m.visible = false;
     }
   }
 
@@ -123,37 +149,30 @@ export class AvatarPlayer {
     const r = this.renderer.domElement.getBoundingClientRect();
     return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   }
+  // click a handle → attach the move gizmo to it (don't steal gizmo-arrow clicks)
   _onPointerDown(e) {
-    if (!this.editing) return;
+    if (!this.editing || (this.gizmo && this.gizmo.dragging)) return;
     this.raycaster.setFromCamera(this._ndc(e), this.camera);
     const hits = this.raycaster.intersectObjects(this.handleMeshes.filter((m) => m.visible), false);
-    if (!hits.length) return;
-    this.dragJoint = hits[0].object.userData.joint;
-    const n = new THREE.Vector3(); this.camera.getWorldDirection(n);
-    this.dragPlane.setFromNormalAndCoplanarPoint(n, hits[0].object.position.clone());
-    this.renderer.domElement.style.cursor = 'grabbing';
-    e.preventDefault();
+    if (hits.length) this._selectHandle(hits[0].object);
   }
-  _onPointerMove(e) {
-    if (!this.editing) return;
-    if (!this.dragJoint) { // hover cursor
-      this.raycaster.setFromCamera(this._ndc(e), this.camera);
-      this.renderer.domElement.style.cursor =
-        this.raycaster.intersectObjects(this.handleMeshes.filter((m) => m.visible), false).length ? 'grab' : '';
-      return;
-    }
-    this.raycaster.setFromCamera(this._ndc(e), this.camera);
-    const pt = new THREE.Vector3();
-    if (!this.raycaster.ray.intersectPlane(this.dragPlane, pt)) return;
-    const cur = this._editTargets()[this.dragJoint] || STAND[this.dragJoint] || [0, 0, 0];
-    let [x, y, z] = [pt.x, pt.y, pt.z];
-    if (this.view === 'side') x = cur[0]; else z = cur[2]; // keep poses planar
-    y = Math.max(0.03, y); // never below ground
-    this._setTarget(this.dragJoint, [x, y, z]);
-    this.renderEditPose();
+  _selectHandle(mesh) {
+    this.selected = mesh.userData.joint;
+    this.gizmo.attach(mesh);
+    for (const m of this.handleMeshes) m.material.opacity = (m === mesh) ? 1 : 0.6;
+    this._renderOnce();
+    if (this.onSelect) this.onSelect(this.selected);
+  }
+  setGizmoMode(mode) { if (this.gizmo) this.gizmo.setMode(mode); }
+  // gizmo moved the handle → that joint becomes a destination; re-solve the body
+  _onGizmoMove() {
+    if (!this.editing || !this.gizmo.object) return;
+    const j = this.gizmo.object.userData.joint;
+    const p = this.gizmo.object.position;
+    this._setTarget(j, [p.x, Math.max(0.03, p.y), p.z]);
+    this._applyPose(buildIkPose(this._editTargets(), this.editAnim));
     if (this.onEdit) this.onEdit();
   }
-  _onPointerUp() { this.dragJoint = null; if (this.editing) this.renderer.domElement.style.cursor = 'grab'; }
 
   _buildMeshes() {
     this.bones = BONES.map(([, , r]) => {
@@ -184,6 +203,7 @@ export class AvatarPlayer {
     if (this.view === 'front') this.camera.position.set(0, 0.95, 3.4);
     else this.camera.position.set(3.4, 0.95, 0.0); // side: look down -X
     this.camera.lookAt(0, 0.9, 0);
+    if (this.orbit) { this.orbit.target.set(0, 0.9, 0); this.orbit.update(); }
   }
 
   setConfig(anim) {
@@ -203,6 +223,7 @@ export class AvatarPlayer {
   }
 
   _applyPose(pose) {
+    this.lastPose = pose;
     const V = (n) => { const p = pose[n] || STAND[n] || [0,0,0]; return new THREE.Vector3(p[0], p[1], p[2]); };
     const up = new THREE.Vector3(0, 1, 0);
     BONES.forEach(([a, b], i) => {
