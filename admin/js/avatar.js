@@ -39,9 +39,121 @@ export class AvatarPlayer {
     this._buildMeshes();
     this._applyView();
 
+    // editing state
+    this.editing = false; this.editAnim = null; this.editKf = 'stand';
+    this.mirror = true; this.onEdit = null;
+    this.raycaster = new THREE.Raycaster();
+    this.dragJoint = null; this.dragPlane = new THREE.Plane();
+    const dom = this.renderer.domElement;
+    dom.addEventListener('pointerdown', (e) => this._onPointerDown(e));
+    dom.addEventListener('pointermove', (e) => this._onPointerMove(e));
+    window.addEventListener('pointerup', () => this._onPointerUp());
+
     new ResizeObserver(() => this._resize()).observe(this.container);
     this._renderOnce();
   }
+
+  // ── editing: drag joints to shape keyframe poses ──────────────────────────
+  static DRAG_JOINTS = ['pelvis', 'chest', 'head', 'l_wrist', 'r_wrist', 'l_ankle', 'r_ankle'];
+
+  _buildHandles() {
+    this.handleGroup = new THREE.Group(); this.scene.add(this.handleGroup);
+    this.handleMeshes = [];
+    for (const j of AvatarPlayer.DRAG_JOINTS) {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.055, 14, 12),
+        new THREE.MeshBasicMaterial({ color: 0x84cc16, depthTest: false, transparent: true, opacity: 0.95 }));
+      m.userData.joint = j; m.renderOrder = 999; m.visible = false;
+      this.handleGroup.add(m); this.handleMeshes.push(m);
+    }
+  }
+
+  beginEdit(anim, onEdit) {
+    this.pause();
+    this.editing = true; this.onEdit = onEdit;
+    this.editAnim = JSON.parse(JSON.stringify(anim || {}));
+    this.editAnim.keyframes = this.editAnim.keyframes || {};
+    for (const k of Object.keys(this.editAnim.keyframes)) {
+      const kf = this.editAnim.keyframes[k];
+      if (kf && !kf.targets) this.editAnim.keyframes[k] = { targets: { ...kf } };
+    }
+    if (!this.handleMeshes) this._buildHandles();
+    this.handleGroup.visible = true;
+    this.view = this.editAnim.view || 'side'; this._applyView();
+    this.setEditKeyframe(this.editAnim.keyframes.stand ? 'stand' : Object.keys(this.editAnim.keyframes)[0] || 'stand');
+  }
+
+  endEdit() { this.editing = false; if (this.handleGroup) this.handleGroup.visible = false; }
+
+  _defaultTargets() {
+    const pick = ['pelvis', 'chest', 'l_wrist', 'r_wrist', 'l_ankle', 'r_ankle', 'l_toe', 'r_toe'];
+    return Object.fromEntries(pick.map((j) => [j, [...STAND[j]]]));
+  }
+
+  setEditKeyframe(name) {
+    if (!this.editAnim.keyframes[name]) this.editAnim.keyframes[name] = { targets: this._defaultTargets() };
+    this.editKf = name;
+    this.renderEditPose();
+  }
+
+  keyframeNames() { return Object.keys(this.editAnim?.keyframes || {}); }
+  _editTargets() { return this.editAnim.keyframes[this.editKf].targets; }
+  renderEditPose() { this._applyPose(buildIkPose(this._editTargets(), this.editAnim)); }
+  getEditedAnim() { return this.editAnim; }
+
+  _placeHandles() {
+    const t = this._editTargets();
+    for (const m of this.handleMeshes) {
+      const j = m.userData.joint;
+      if (t[j]) { m.position.set(t[j][0], t[j][1], t[j][2]); m.visible = true; }
+      else m.visible = false;
+    }
+  }
+
+  _setTarget(joint, pos) {
+    const t = this._editTargets();
+    t[joint] = pos;
+    if (this.mirror) {
+      const m = joint.startsWith('l_') ? 'r_' + joint.slice(2) : joint.startsWith('r_') ? 'l_' + joint.slice(2) : null;
+      if (m && t[m]) t[m] = [-pos[0], pos[1], pos[2]];
+    }
+  }
+
+  _ndc(e) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  }
+  _onPointerDown(e) {
+    if (!this.editing) return;
+    this.raycaster.setFromCamera(this._ndc(e), this.camera);
+    const hits = this.raycaster.intersectObjects(this.handleMeshes.filter((m) => m.visible), false);
+    if (!hits.length) return;
+    this.dragJoint = hits[0].object.userData.joint;
+    const n = new THREE.Vector3(); this.camera.getWorldDirection(n);
+    this.dragPlane.setFromNormalAndCoplanarPoint(n, hits[0].object.position.clone());
+    this.renderer.domElement.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+  _onPointerMove(e) {
+    if (!this.editing) return;
+    if (!this.dragJoint) { // hover cursor
+      this.raycaster.setFromCamera(this._ndc(e), this.camera);
+      this.renderer.domElement.style.cursor =
+        this.raycaster.intersectObjects(this.handleMeshes.filter((m) => m.visible), false).length ? 'grab' : '';
+      return;
+    }
+    this.raycaster.setFromCamera(this._ndc(e), this.camera);
+    const pt = new THREE.Vector3();
+    if (!this.raycaster.ray.intersectPlane(this.dragPlane, pt)) return;
+    const cur = this._editTargets()[this.dragJoint] || STAND[this.dragJoint] || [0, 0, 0];
+    let [x, y, z] = [pt.x, pt.y, pt.z];
+    if (this.view === 'side') x = cur[0]; else z = cur[2]; // keep poses planar
+    y = Math.max(0.03, y); // never below ground
+    this._setTarget(this.dragJoint, [x, y, z]);
+    this.renderEditPose();
+    if (this.onEdit) this.onEdit();
+  }
+  _onPointerUp() { this.dragJoint = null; if (this.editing) this.renderer.domElement.style.cursor = 'grab'; }
 
   _buildMeshes() {
     this.bones = BONES.map(([, , r]) => {
@@ -90,11 +202,8 @@ export class AvatarPlayer {
     return buildIkPose(targets, this.anim);
   }
 
-  setDepth(depth) {
-    this.depth = Math.max(0, Math.min(1, depth));
-    const pose = this._poseAt(this.depth);
+  _applyPose(pose) {
     const V = (n) => { const p = pose[n] || STAND[n] || [0,0,0]; return new THREE.Vector3(p[0], p[1], p[2]); };
-    // bones
     const up = new THREE.Vector3(0, 1, 0);
     BONES.forEach(([a, b], i) => {
       const pa = V(a), pb = V(b); const mesh = this.bones[i];
@@ -110,7 +219,13 @@ export class AvatarPlayer {
       const ankle = V(k); const toe = V(k.replace('ankle', 'toe'));
       this.feet[k].position.copy(ankle).add(toe).multiplyScalar(0.5);
     }
+    if (this.editing && this.handleMeshes) this._placeHandles();
     this._renderOnce();
+  }
+
+  setDepth(depth) {
+    this.depth = Math.max(0, Math.min(1, depth));
+    this._applyPose(this._poseAt(this.depth));
     if (this.onDepth) this.onDepth(this.depth);
   }
 
