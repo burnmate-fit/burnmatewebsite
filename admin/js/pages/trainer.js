@@ -3,6 +3,7 @@ import { el, header, card, spinner, errorBox, pill } from '../ui.js';
 import { icon } from '../icons.js';
 import { AvatarPlayer } from '../avatar.js';
 import { deriveRep, buildTrackerConfig } from '../solver.js';
+import { PoseTester } from '../posetest.js';
 
 let player = null;
 
@@ -46,17 +47,17 @@ export async function renderTrainer(view) {
 
   player = new AvatarPlayer(stage);
 
-  select.addEventListener('change', () => { if (select.value) previewMode(panel, select.value, exercises); });
+  select.addEventListener('change', () => { if (select.value) previewMode(panel, select.value, exercises, stage); });
   newBtn.addEventListener('click', () => { select.value = ''; editMode(panel, null, exercises); });
 
   // start by previewing the first real exercise, if any
   const first = exercises.find((e) => e.trainer_config);
-  if (first) { select.value = first.slug; previewMode(panel, first.slug, exercises); }
+  if (first) { select.value = first.slug; previewMode(panel, first.slug, exercises, stage); }
   else editMode(panel, null, exercises);
 }
 
-// ── PREVIEW: play the saved config ──────────────────────────────────────────
-async function previewMode(panel, slug, exercises) {
+// ── PREVIEW: play the saved config + webcam live-test ────────────────────────
+async function previewMode(panel, slug, exercises, stage) {
   player.endEdit();
   panel.replaceChildren(spinner('Loading config…'));
   let cfg;
@@ -69,23 +70,41 @@ async function previewMode(panel, slug, exercises) {
   const setPlay = (p) => playBtn.replaceChildren(icon(p ? 'pause' : 'play', 'w-4 h-4'), p ? 'Pause' : 'Play');
   setPlay(false);
   const editBtn = el('button', { class: 'inline-flex items-center gap-1.5 text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, icon('edit', 'w-4 h-4'), 'Edit this');
+  const testBtn = el('button', { class: 'inline-flex items-center gap-1.5 text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, icon('person', 'w-4 h-4'), 'Test with webcam');
 
   playBtn.onclick = () => { if (player.playing) { player.pause(); setPlay(false); } else { player.play(); setPlay(true); } };
   player.onDepth = (d) => { depth.value = Math.round(d * 100); };
   depth.oninput = () => { player.pause(); setPlay(false); player.setDepth(depth.value / 100); };
   editBtn.onclick = () => editMode(panel, { slug, cfg }, exercises);
+  testBtn.onclick = () => startWebcamTest(stage, slug, testBtn);
 
   panel.replaceChildren(
     card(
       el('div', { class: 'flex items-center gap-2 mb-3' }, pill(cfg.file), pill(`${Object.keys(cfg.trainer_animation.keyframes || {}).length} keyframes`, 'accent')),
       el('div', { class: 'flex items-center gap-3' }, playBtn,
         el('div', { class: 'flex items-center gap-2 flex-1' }, el('span', { class: 'text-xs text-neutral-500' }, 'depth'), depth)),
-      el('div', { class: 'mt-3' }, editBtn),
+      el('div', { class: 'flex gap-2 mt-3' }, editBtn, testBtn),
     ),
     card(el('div', { class: 'text-xs text-neutral-500 leading-relaxed' },
       el('span', { class: 'text-accent font-semibold' }, 'Parity: '),
       'this avatar is a direct port of the CM5 solver — what you design here is what the board shows.')),
   );
+}
+
+// Overlay the webcam tester on top of the avatar stage; counts reps against the
+// exercise's saved tracker config (same thresholds the CM5 uses).
+async function startWebcamTest(stage, slug, testBtn) {
+  player.pause();
+  const host = stage.parentElement; host.style.position = 'relative';
+  testBtn.disabled = true;
+  const overlay = el('div', { class: 'absolute inset-0 bg-ink z-10' });
+  const stopBtn = el('button', { class: 'absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 bg-danger text-white font-semibold text-sm px-3 py-2 rounded-lg' }, 'Stop test');
+  host.append(overlay, stopBtn);
+  const tester = new PoseTester(overlay);
+  let tracker = null;
+  try { tracker = await api.trackerConfig(slug); } catch { /* no rep config yet → tester uses defaults */ }
+  stopBtn.onclick = () => { tester.stop(); overlay.remove(); stopBtn.remove(); testBtn.disabled = false; };
+  tester.start(tracker);
 }
 
 // ── EDIT: pose the sequence Start → Success → End; auto-derive the rep ───────
