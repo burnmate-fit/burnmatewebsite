@@ -1,4 +1,6 @@
 // Tiny DOM helpers — keeps pages terse without a framework.
+import { icon } from './icons.js';
+
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -43,8 +45,9 @@ export function spinner(label = 'Loading…') {
 }
 
 export function errorBox(e) {
-  return el('div', { class: 'rounded-lg border border-danger/40 bg-danger/10 text-danger px-4 py-3 text-sm' },
-    `⚠ ${e.message || e}. Is the backend running at the API base shown bottom-left?`);
+  return el('div', { class: 'flex items-start gap-2 rounded-lg border border-danger/40 bg-danger/10 text-danger px-4 py-3 text-sm' },
+    icon('alert', 'w-4 h-4 mt-0.5 shrink-0'),
+    el('span', {}, `${e.message || e}. Is the backend running at the API base shown bottom-left?`));
 }
 
 export function pill(text, tone = 'neutral') {

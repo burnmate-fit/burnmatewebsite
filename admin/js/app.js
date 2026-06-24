@@ -1,5 +1,6 @@
 import { api, API_BASE } from './api.js';
 import { el } from './ui.js';
+import { icon } from './icons.js';
 import { renderAnalysis } from './pages/analysis.js';
 import { renderSchema } from './pages/schema.js';
 import { renderPipeline } from './pages/pipeline.js';
@@ -7,11 +8,11 @@ import { renderDatabase } from './pages/database.js';
 import { renderTrainer } from './pages/trainer.js';
 
 const ROUTES = [
-  { id: 'analysis', label: 'Analysis', icon: '📊', render: renderAnalysis },
-  { id: 'schema', label: 'Schema', icon: '🗂', render: renderSchema },
-  { id: 'pipeline', label: 'AI Pipeline', icon: '🧠', render: renderPipeline },
-  { id: 'database', label: 'Database', icon: '🏋', render: renderDatabase },
-  { id: 'trainer', label: 'Trainer Designer', icon: '🤸', render: renderTrainer },
+  { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
+  { id: 'schema', label: 'Schema', icon: 'table', render: renderSchema },
+  { id: 'pipeline', label: 'AI Pipeline', icon: 'cpu', render: renderPipeline },
+  { id: 'database', label: 'Database', icon: 'dumbbell', render: renderDatabase },
+  { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
 ];
 
 const view = document.getElementById('view');
@@ -22,9 +23,9 @@ function buildNav() {
     nav.append(el('a', {
       href: `#/${r.id}`,
       'data-id': r.id,
-      class: 'nav-item flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 border border-transparent hover:text-neutral-200',
+      class: 'nav-item flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-neutral-400 border border-transparent hover:text-neutral-200 hover:bg-white/[0.03]',
     },
-      el('span', { class: 'text-base' }, r.icon),
+      icon(r.icon, 'w-[17px] h-[17px] shrink-0'),
       el('span', {}, r.label),
       el('span', { class: 'dot ml-auto w-1.5 h-1.5 rounded-full bg-accent opacity-0' }),
     ));

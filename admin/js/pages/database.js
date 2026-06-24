@@ -1,5 +1,6 @@
 import { api, API_BASE } from '../api.js';
 import { el, header, card, tabs, spinner, errorBox, pill } from '../ui.js';
+import { icon } from '../icons.js';
 
 let activeTab = 'exercises';
 
@@ -13,8 +14,9 @@ export async function renderDatabase(view) {
 }
 
 function renderFood(body) {
+  const ic = icon('utensils', 'w-7 h-7'); ic.classList.add('text-neutral-600');
   body.append(el('div', { class: 'rounded-xl border border-dashed border-line bg-surface/40 p-12 text-center' },
-    el('div', { class: 'text-4xl mb-3 opacity-40' }, '🥗'),
+    el('div', { class: 'inline-flex items-center justify-center w-14 h-14 rounded-xl border border-line mb-4' }, ic),
     el('p', { class: 'text-neutral-500 text-sm' }, 'Food is generated per-plan by the AI — no stored catalog yet. This tab stays blank until we add a food/ingredient table.')));
 }
 
@@ -27,17 +29,18 @@ async function renderExercises(body) {
 
   const toolbar = el('div', { class: 'flex items-center mb-4' },
     el('div', { class: 'text-sm text-neutral-500' }, `${list.length} exercises`),
-    el('button', { class: 'ml-auto bg-accent text-ink font-semibold text-sm px-3 py-1.5 rounded-lg hover:bg-accentDim',
-      onclick: () => openForm(body, null) }, '+ Add exercise'),
+    el('button', { class: 'ml-auto inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-3 py-1.5 rounded-lg hover:bg-accentDim',
+      onclick: () => openForm(body, null) }, icon('plus', 'w-4 h-4'), 'Add exercise'),
   );
 
   const grid = el('div', { class: 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4' });
   for (const ex of list) {
     const img = ex.image_url ? (ex.image_url.startsWith('http') ? ex.image_url : API_BASE + ex.image_url) : null;
+    const fallback = () => { const i = icon('dumbbell', 'w-6 h-6'); i.classList.add('text-neutral-600'); return i; };
     grid.append(card(
       el('div', { class: 'flex gap-3' },
-        el('div', { class: 'w-16 h-16 rounded-lg bg-ink border border-line shrink-0 overflow-hidden flex items-center justify-center text-2xl' },
-          img ? el('img', { src: img, class: 'w-full h-full object-cover', onerror: function () { this.replaceWith(document.createTextNode('🏋')); } }) : '🏋'),
+        el('div', { class: 'w-16 h-16 rounded-lg bg-ink border border-line shrink-0 overflow-hidden flex items-center justify-center' },
+          img ? el('img', { src: img, class: 'w-full h-full object-cover', onerror: function () { this.replaceWith(fallback()); } }) : fallback()),
         el('div', { class: 'min-w-0' },
           el('div', { class: 'font-bold truncate' }, ex.display_name || ex.slug),
           el('div', { class: 'text-xs text-neutral-500' }, ex.slug),
@@ -47,13 +50,13 @@ async function renderExercises(body) {
           ),
         ),
       ),
-      el('div', { class: 'flex gap-2 mt-3 pt-3 border-t border-line' },
+      el('div', { class: 'flex items-center gap-2 mt-3 pt-3 border-t border-line' },
         el('span', { class: 'text-[11px] text-neutral-600 truncate flex-1' }, ex.trainer_config || 'no trainer cfg'),
-        el('button', { class: 'text-xs text-accent hover:underline', onclick: () => openForm(body, ex) }, 'edit'),
-        el('button', { class: 'text-xs text-danger hover:underline', onclick: async () => {
+        el('button', { class: 'inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-accent', onclick: () => openForm(body, ex) }, icon('edit', 'w-3.5 h-3.5'), 'Edit'),
+        el('button', { class: 'inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-danger', onclick: async () => {
           if (!confirm(`Delete "${ex.slug}"?`)) return;
           await api.deleteExercise(ex.slug); renderDatabaseReset(body);
-        } }, 'delete'),
+        } }, icon('trash', 'w-3.5 h-3.5'), 'Delete'),
       ),
     ));
   }
@@ -118,7 +121,7 @@ function openForm(body, ex) {
       renderDatabaseReset(body);
     } catch (err) {
       const box = f.querySelector('#form-err');
-      box.textContent = `⚠ ${err.message}`;
+      box.textContent = err.message;
       box.classList.remove('hidden');
     }
   });

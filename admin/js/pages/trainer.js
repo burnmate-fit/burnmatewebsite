@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { el, header, card, spinner, errorBox, pill } from '../ui.js';
+import { icon } from '../icons.js';
 import { AvatarPlayer } from '../avatar.js';
 
 let player = null;
@@ -23,7 +24,9 @@ export async function renderTrainer(view) {
   const stage = el('div', { class: 'rounded-xl border border-line bg-ink overflow-hidden', style: 'height:520px' });
   const depthSlider = el('input', { type: 'range', min: '0', max: '100', value: '0', class: 'flex-1 accent-accent' });
   const depthLabel = el('span', { class: 'text-xs text-neutral-500 w-20 text-right' }, 'stand');
-  const playBtn = el('button', { class: 'bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' }, '▶ Play');
+  const playBtn = el('button', { class: 'inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' });
+  const setPlay = (playing) => playBtn.replaceChildren(icon(playing ? 'pause' : 'play', 'w-4 h-4'), playing ? 'Pause' : 'Play');
+  setPlay(false);
   const viewBtn = el('button', { class: 'text-sm border border-line rounded-lg px-3 py-2 text-neutral-300' }, 'side view');
   const meta = el('div', { class: 'text-xs text-neutral-500' });
   const checkpoints = el('div', {});
@@ -66,16 +69,16 @@ export async function renderTrainer(view) {
     } catch (e) { meta.replaceChildren(errorBox(e)); checkpoints.replaceChildren(); }
   }
 
-  select.addEventListener('change', () => { player.pause(); playBtn.textContent = '▶ Play'; load(select.value); });
+  select.addEventListener('change', () => { player.pause(); setPlay(false); load(select.value); });
   playBtn.addEventListener('click', () => {
-    if (player.playing) { player.pause(); playBtn.textContent = '▶ Play'; }
-    else { player.play(); playBtn.textContent = '❚❚ Pause'; }
+    if (player.playing) { player.pause(); setPlay(false); }
+    else { player.play(); setPlay(true); }
   });
   viewBtn.addEventListener('click', () => {
     player.view = player.view === 'side' ? 'front' : 'side'; player._applyView(); player._renderOnce();
     viewBtn.textContent = `${player.view} view`;
   });
-  depthSlider.addEventListener('input', () => { player.pause(); playBtn.textContent = '▶ Play'; player.setDepth(depthSlider.value / 100); });
+  depthSlider.addEventListener('input', () => { player.pause(); setPlay(false); player.setDepth(depthSlider.value / 100); });
 
   load(withTrainer[0].slug);
 }
