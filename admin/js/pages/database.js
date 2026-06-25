@@ -5,20 +5,117 @@ import { icon } from '../icons.js';
 let activeTab = 'exercises';
 
 export async function renderDatabase(view) {
-  view.append(header('Database', 'The exercise catalog the CM5 board and the app pull from.'));
-  const bar = tabs([['exercises', 'Exercises'], ['food', 'Food recommendations']], activeTab, (k) => { activeTab = k; renderDatabase(view.replaceChildren() || view); });
+  view.append(header('Database', 'The catalogs the CM5 board, the app, and the AI pull from.'));
+  const bar = tabs([['exercises', 'Exercises'], ['food', 'Food (RAG vector DB)']], activeTab, (k) => { activeTab = k; renderDatabase(view.replaceChildren() || view); });
   const body = el('div', {});
   view.append(bar, body);
   if (activeTab === 'exercises') await renderExercises(body);
-  else renderFood(body);
+  else await renderFood(body);
 }
 
-function renderFood(body) {
-  const ic = icon('utensils', 'w-7 h-7'); ic.classList.add('text-neutral-600');
-  body.append(el('div', { class: 'rounded-xl border border-dashed border-line bg-surface/40 p-12 text-center' },
-    el('div', { class: 'inline-flex items-center justify-center w-14 h-14 rounded-xl border border-line mb-4' }, ic),
-    el('p', { class: 'text-neutral-500 text-sm' }, 'Food is generated per-plan by the AI — no stored catalog yet. This tab stays blank until we add a food/ingredient table.')));
+// ── Food (RAG) — browse the nutrition vector DB; add food auto-embeds it ─────
+async function renderFood(body) {
+  const slot = el('div', {}, spinner('Loading foods…'));
+  body.append(slot);
+  let data;
+  try { data = await api.foods(); }
+  catch (e) { slot.replaceChildren(errorBox(e)); return; }
+
+  const search = el('input', { placeholder: 'search foods…',
+    class: 'bg-ink border border-line rounded-lg px-3 py-1.5 text-sm focus:border-accent outline-none w-56' });
+  let timer;
+  search.oninput = () => { clearTimeout(timer); timer = setTimeout(async () => {
+    try { const d = await api.foods(search.value); paint(d.foods); } catch {} }, 250); };
+
+  const toolbar = el('div', { class: 'flex items-center gap-3 mb-4' },
+    el('div', { class: 'text-sm text-neutral-400' }, pill(`${data.total} foods in vector DB`, 'accent')),
+    el('span', { class: 'text-xs text-neutral-600' }, 'add a food → it auto-embeds (384-dim) into RAG'),
+    search,
+    el('button', { class: 'ml-auto inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-3 py-1.5 rounded-lg hover:bg-accentDim',
+      onclick: () => openFoodForm(body) }, icon('plus', 'w-4 h-4'), 'Add food'));
+
+  const listWrap = el('div', { class: 'rounded-xl border border-line overflow-hidden' });
+  function paint(foods) {
+    listWrap.replaceChildren(
+      el('div', { class: 'grid grid-cols-[2fr_1fr_repeat(3,0.6fr)_1fr_auto] gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-neutral-500 bg-ink border-b border-line' },
+        el('span', {}, 'Food'), el('span', {}, 'Serving'), el('span', {}, 'Cal'),
+        el('span', {}, 'P'), el('span', {}, 'C/F'), el('span', {}, 'Diet · Cuisine'), el('span', {}, '')),
+      ...foods.map((f) => el('div', { class: 'grid grid-cols-[2fr_1fr_repeat(3,0.6fr)_1fr_auto] gap-2 px-4 py-2 text-sm items-center border-b border-line/50 hover:bg-white/[0.02]' },
+        el('span', { class: 'font-medium truncate' }, f.name,
+          (f.allergens && f.allergens.length) ? el('span', { class: 'ml-1.5 text-[10px] text-danger' }, f.allergens.join(',')) : null),
+        el('span', { class: 'text-neutral-500 text-xs truncate' }, f.serving_size || '—'),
+        el('span', { class: 'text-neutral-300' }, Math.round(f.calories ?? 0)),
+        el('span', { class: 'text-neutral-400' }, `${f.protein_g ?? 0}g`),
+        el('span', { class: 'text-neutral-500 text-xs' }, `${f.carbs_g ?? 0}/${f.fat_g ?? 0}`),
+        el('div', { class: 'flex gap-1 flex-wrap' }, f.diet_type ? pill(f.diet_type) : null, f.cuisine ? pill(f.cuisine, 'accent') : null),
+        el('button', { class: 'text-neutral-500 hover:text-danger', title: 'delete',
+          onclick: async () => { if (!confirm(`Delete "${f.name}"?`)) return; await api.deleteFood(f.id); renderFoodReset(body); } }, icon('trash', 'w-4 h-4')),
+      )),
+    );
+  }
+  paint(data.foods);
+  slot.replaceChildren(toolbar, listWrap);
 }
+
+function renderFoodReset(body) { body.replaceChildren(); renderFood(body); }
+
+function foodField(label, name, ph = '', type = 'text') {
+  return el('label', { class: 'block' },
+    el('div', { class: 'text-xs text-neutral-500 mb-1' }, label),
+    el('input', { name, type, placeholder: ph,
+      class: 'w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm focus:border-accent outline-none' }));
+}
+
+function openFoodForm(body) {
+  const overlay = el('div', { class: 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4' });
+  const f = el('form', { class: 'bg-surface border border-line rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto' },
+    el('h3', { class: 'font-bold text-lg mb-1' }, 'Add food'),
+    el('p', { class: 'text-xs text-neutral-500 mb-4' }, 'Saved → embedded into the vector DB → instantly used by RAG. Use REAL macros.'),
+    el('div', { class: 'grid grid-cols-2 gap-3' },
+      foodField('Name', 'name', 'Sprouted moong salad'),
+      foodField('Serving size', 'serving_size', '1 bowl (100g)'),
+      foodField('Calories', 'calories', '105', 'number'),
+      foodField('Protein (g)', 'protein_g', '7', 'number'),
+      foodField('Carbs (g)', 'carbs_g', '15', 'number'),
+      foodField('Fat (g)', 'fat_g', '1', 'number'),
+      foodField('Cuisine', 'cuisine', 'North Indian'),
+      _foodSelect('Diet type', 'diet_type', ['', 'vegan', 'vegetarian', 'eggatarian', 'pescatarian', 'no restriction']),
+      foodField('Allergens (comma)', 'allergens', 'dairy, gluten'),
+      foodField('Tags (comma)', 'tags', 'high-protein, snack'),
+    ),
+    el('div', { class: 'text-danger text-xs mt-3 hidden', id: 'food-err' }),
+    el('div', { class: 'flex gap-2 mt-5' },
+      el('button', { type: 'button', class: 'text-sm text-neutral-400 px-3 py-2', onclick: () => overlay.remove() }, 'Cancel'),
+      el('button', { type: 'submit', class: 'ml-auto inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' }, icon('plus', 'w-4 h-4'), 'Add & embed')),
+  );
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(f);
+    const num = (v) => v === '' ? null : Number(v);
+    const list = (v) => String(v || '').split(',').map((x) => x.trim()).filter(Boolean);
+    const payload = {
+      name: fd.get('name').trim(), serving_size: fd.get('serving_size').trim() || null,
+      calories: num(fd.get('calories')), protein_g: num(fd.get('protein_g')),
+      carbs_g: num(fd.get('carbs_g')), fat_g: num(fd.get('fat_g')),
+      cuisine: fd.get('cuisine').trim() || null, diet_type: fd.get('diet_type') || null,
+      allergens: list(fd.get('allergens')), tags: list(fd.get('tags')),
+    };
+    if (!payload.name) { return _err(f, 'Name is required.'); }
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'embedding…';
+    try { await api.createFood(payload); overlay.remove(); renderFoodReset(body); }
+    catch (err) { _err(f, err.message); btn.disabled = false; btn.textContent = 'Add & embed'; }
+  });
+  overlay.append(f);
+  document.body.append(overlay);
+}
+
+function _foodSelect(label, name, opts) {
+  return el('label', { class: 'block' },
+    el('div', { class: 'text-xs text-neutral-500 mb-1' }, label),
+    el('select', { name, class: 'w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm focus:border-accent outline-none' },
+      ...opts.map((o) => el('option', { value: o }, o || '—'))));
+}
+function _err(f, msg) { const b = f.querySelector('#food-err'); b.textContent = msg; b.classList.remove('hidden'); }
 
 async function renderExercises(body) {
   const slot = el('div', {}, spinner('Loading exercises…'));

@@ -39,4 +39,9 @@ export const api = {
   saveTrainerConfig: (slug, body) => req(`/trainer/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
   trackerConfig: (slug) => req(`/tracker/${slug}/config`),
   saveTrackerConfig: (slug, body) => req(`/tracker/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
+  // RAG foods (nutrition vector DB)
+  foods: (q = '') => req(`/foods?limit=500${q ? `&q=${encodeURIComponent(q)}` : ''}`),
+  createFood: (body) => req('/foods', { method: 'POST', body: JSON.stringify(body) }),
+  deleteFood: (id) => req(`/foods/${id}`, { method: 'DELETE' }),
+  retrieveFoods: (params) => req('/foods/retrieve?' + new URLSearchParams(params).toString()),
 };
