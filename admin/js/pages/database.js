@@ -6,11 +6,64 @@ let activeTab = 'exercises';
 
 export async function renderDatabase(view) {
   view.append(header('Database', 'The catalogs the CM5 board, the app, and the AI pull from.'));
-  const bar = tabs([['exercises', 'Exercises'], ['food', 'Food (RAG vector DB)']], activeTab, (k) => { activeTab = k; renderDatabase(view.replaceChildren() || view); });
+  const bar = tabs([['exercises', 'Exercises'], ['food', 'Food (RAG)'], ['vectordb', 'Vector DB (raw)']], activeTab, (k) => { activeTab = k; renderDatabase(view.replaceChildren() || view); });
   const body = el('div', {});
   view.append(bar, body);
   if (activeTab === 'exercises') await renderExercises(body);
-  else await renderFood(body);
+  else if (activeTab === 'food') await renderFood(body);
+  else await renderVectorDB(body);
+}
+
+// ── Vector DB (raw, read-only) — schema + raw stored rows incl. embeddings ───
+async function renderVectorDB(body) {
+  const slot = el('div', {}, spinner('Loading vector DB…'));
+  body.append(slot);
+  let d;
+  try { d = await api.vectorDb(); }
+  catch (e) { slot.replaceChildren(errorBox(e)); return; }
+
+  const isHard = (desc) => /HARD/.test(desc);
+  // schema card — how each parameter is stored
+  const schemaCard = card(
+    el('div', { class: 'flex items-center gap-2 mb-3' },
+      el('h3', { class: 'font-bold' }, 'Storage schema'),
+      pill(d.table, 'accent'), pill(`${d.total} rows`)),
+    el('div', { class: 'grid md:grid-cols-2 gap-x-6 gap-y-1' },
+      ...d.schema.map((c) => el('div', { class: 'flex items-baseline gap-2 text-sm py-1 border-b border-line/40' },
+        el('code', { class: 'text-accent' }, c.column),
+        el('span', { class: 'text-[11px] text-neutral-600' }, c.type.toLowerCase()),
+        isHard(c.desc) ? pill('HARD filter', 'danger') : null,
+        el('span', { class: 'text-xs text-neutral-500 ml-auto text-right' }, c.desc),
+      ))),
+  );
+
+  // raw rows — read-only, shows embed_text + the actual vector preview
+  const rowsCard = card(
+    el('div', { class: 'flex items-center gap-2 mb-3' },
+      el('h3', { class: 'font-bold' }, 'Raw rows'),
+      el('span', { class: 'text-xs text-neutral-600' }, 'read-only · embedding shown as first 8 of 384 dims')),
+    el('div', { class: 'overflow-auto rounded-lg border border-line', style: 'max-height:520px' },
+      el('table', { class: 'w-full text-sm border-collapse' },
+        el('thead', { class: 'sticky top-0 bg-ink' },
+          el('tr', { class: 'text-[11px] uppercase tracking-wide text-neutral-500' },
+            ...['id', 'name', 'diet', 'cuisine', 'kcal', 'embed_text (embedded)', 'embedding (384-dim)']
+              .map((h) => el('th', { class: 'text-left font-medium px-3 py-2 border-b border-line' }, h)))),
+        el('tbody', {},
+          ...d.rows.map((r) => el('tr', { class: 'border-b border-line/40 hover:bg-white/[0.02] align-top' },
+            el('td', { class: 'px-3 py-2 text-neutral-600' }, r.id),
+            el('td', { class: 'px-3 py-2 font-medium whitespace-nowrap' }, r.name),
+            el('td', { class: 'px-3 py-2' }, r.diet_type ? pill(r.diet_type) : '—'),
+            el('td', { class: 'px-3 py-2 text-neutral-400 text-xs' }, r.cuisine || '—'),
+            el('td', { class: 'px-3 py-2 text-neutral-400' }, Math.round(r.calories ?? 0)),
+            el('td', { class: 'px-3 py-2 text-neutral-400 text-xs max-w-[280px]' }, r.embed_text || '—'),
+            el('td', { class: 'px-3 py-2' },
+              el('code', { class: 'text-[11px] text-accent/80 whitespace-nowrap' },
+                '[' + (r.embedding_preview || []).join(', ') + ', …]')),
+          )))),
+    ),
+  );
+
+  slot.replaceChildren(el('div', { class: 'space-y-6' }, schemaCard, rowsCard));
 }
 
 // ── Food (RAG) — browse the nutrition vector DB; add food auto-embeds it ─────

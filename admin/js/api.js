@@ -44,4 +44,5 @@ export const api = {
   createFood: (body) => req('/foods', { method: 'POST', body: JSON.stringify(body) }),
   deleteFood: (id) => req(`/foods/${id}`, { method: 'DELETE' }),
   retrieveFoods: (params) => req('/foods/retrieve?' + new URLSearchParams(params).toString()),
+  vectorDb: () => req('/vectordb'),
 };
