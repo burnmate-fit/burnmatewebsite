@@ -403,6 +403,112 @@
   .fc-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
   .fc-desc { font-size: 0.85rem; color: var(--gray); line-height: 1.6; }
 
+  /* ── EXPERTS (compact card grid) ── */
+  #experts { background: var(--darker); position: relative; overflow: hidden; }
+  .experts-glow {
+    position: absolute; top: 8%; left: 50%; transform: translateX(-50%);
+    width: 720px; height: 420px; pointer-events: none;
+    background: radial-gradient(ellipse, rgba(139,92,246,0.14), transparent 65%);
+  }
+  .experts-head { position: relative; z-index: 2; text-align: center; max-width: 640px; margin: 0 auto; }
+  .experts-head .section-desc { margin: 0 auto; }
+  .experts-grid {
+    position: relative; z-index: 2;
+    margin-top: 3rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 372px));
+    gap: 1.6rem; justify-content: center;
+  }
+  .expert-card {
+    position: relative; overflow: hidden;
+    aspect-ratio: 3 / 4;
+    border-radius: 18px; border: 1px solid var(--border);
+    box-shadow: 0 24px 50px -22px rgba(0,0,0,0.8);
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .expert-card:hover { border-color: rgba(139,92,246,0.55); transform: translateY(-5px); }
+  .ec-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: 50% 16%; display: block;
+  }
+  .ec-flag {
+    position: absolute; top: 14px; left: 14px; z-index: 3;
+    background: linear-gradient(150deg, #f4f5f7, #c2c4cb 55%, #9a9da5);
+    color: #26262a; border: 1px solid rgba(255,255,255,0.65);
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.28rem 0.7rem 0.28rem 0.32rem; border-radius: 40px;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+  }
+  .ec-flag-medal {
+    width: 19px; height: 19px; border-radius: 50%;
+    background: linear-gradient(150deg, #d9dbe0, #8b8e96);
+    border: 1px solid rgba(255,255,255,0.7);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #3a3a3e; font-size: 0.6rem;
+  }
+  .ec-overlay {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+    padding: 3.2rem 1.4rem 1.4rem;
+    background: linear-gradient(to top, rgba(8,8,8,0.96) 6%, rgba(8,8,8,0.74) 46%, rgba(8,8,8,0) 100%);
+  }
+  .ec-role {
+    font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
+    letter-spacing: 0.15em; color: var(--accent2); font-weight: 700;
+    font-size: 0.8rem; margin-bottom: 0.2rem;
+  }
+  .ec-name {
+    font-family: 'Bebas Neue', sans-serif; color: #fff;
+    font-size: 2.7rem; line-height: 0.95; letter-spacing: 0.02em;
+    margin-bottom: 0.85rem;
+  }
+  .ec-creds { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .cred {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28);
+    color: #f2f2f2; font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 0.28rem 0.66rem; border-radius: 40px;
+  }
+
+  /* ── TEAM (founders dumbbell) ── */
+  #team { background: var(--black); }
+  .team-dumbbell { max-width: 1060px; margin: 2.5rem auto 0; }
+  .team-dumbbell svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .team-grid {
+    margin-top: 4rem; display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem; max-width: 640px; margin-left: auto; margin-right: auto;
+  }
+  .team-card {
+    position: relative; overflow: hidden;
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 2.6rem 1.5rem 2rem; text-align: center;
+    transition: all 0.3s;
+  }
+  .team-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0); transform-origin: left; transition: transform 0.35s;
+  }
+  .team-card:hover { border-color: rgba(139,92,246,0.5); transform: translateY(-5px); }
+  .team-card:hover::before { transform: scaleX(1); }
+  .team-avatar {
+    position: relative; box-sizing: border-box;
+    width: 168px; height: 168px; margin: 0 auto 1.4rem;
+    border-radius: 50%; padding: 3px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+  .team-avatar img {
+    width: 100%; height: 100%; border-radius: 50%;
+    object-fit: cover; object-position: 50% 25%; display: block;
+  }
+  .team-name { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 1; letter-spacing: 0.02em; }
+  .team-role {
+    font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
+    letter-spacing: 0.18em; color: var(--accent2); font-weight: 700;
+    font-size: 0.85rem; margin-top: 0.35rem;
+  }
+
   /* Device illustration */
   .device-showcase {
     position: relative;
@@ -887,12 +993,14 @@
     .hamburger { display: flex; }
     .features-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     .why-features { grid-template-columns: 1fr; }
+    .experts-grid { grid-template-columns: minmax(0, 372px); }
   }
   @media(max-width: 600px) {
     .steps-grid { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr; }
     .app-phones { gap: 1rem; }
     .phone-frame { width: 160px; }
+    .team-grid { grid-template-columns: 1fr; max-width: 320px; }
   }
 </style>
 </head>
@@ -904,6 +1012,8 @@
   <ul class="nav-links">
     <li><a href="#why">About</a></li>
     <li><a href="#how">How It Works</a></li>
+    <li><a href="#experts">Experts</a></li>
+    <li><a href="#team">Team</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#app">App</a></li>
@@ -1019,6 +1129,87 @@
   </div>
 </section>
 
+<!-- EXPERTS -->
+<section id="experts">
+  <div class="experts-glow"></div>
+  <div class="experts-head">
+    <div class="section-label">Guided By Our Experts</div>
+    <h2 class="section-title">THE MIND BEHIND <em>THE METHOD</em></h2>
+  </div>
+
+  <div class="experts-grid">
+    <!-- Expert card — copy this <article> block to add another expert; the grid re-centres and wraps 1, 2, 3+ automatically. -->
+    <article class="expert-card">
+      <img class="ec-img" src="expert-surya.jpg" alt="Ram Mohan — Head Fitness Expert &amp; Coach" loading="lazy">
+      <span class="ec-flag"><span class="ec-flag-medal"><i class="fas fa-medal"></i></span>Silver Medalist</span>
+      <div class="ec-overlay">
+        <div class="ec-role">Head Fitness Expert &amp; Coach</div>
+        <h3 class="ec-name">Ram Mohan</h3>
+        <div class="ec-creds">
+          <span class="cred">Mr. Hyderabad</span>
+          <span class="cred">Pro Bodybuilder</span>
+          <span class="cred">Human Anatomist</span>
+          <span class="cred">Nutritionist</span>
+          <span class="cred">Lifestyle Coach</span>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div style="text-align:center;">
+    <div class="section-label">Behind Burnmate</div>
+    <h2 class="section-title">MEET OUR <em>TEAM</em></h2>
+  </div>
+  <div class="team-dumbbell">
+    <svg viewBox="0 0 760 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Meet our team. Surya, Co-Founder and CEO. Arpita, Co-Founder and CTO.">
+      <defs>
+        <linearGradient id="fadeG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(8,8,10,0)"/><stop offset="1" stop-color="rgba(6,6,8,0.94)"/>
+        </linearGradient>
+        <clipPath id="clipL"><polygon points="150,32 231.1,58.4 281.2,127.4 281.2,212.6 231.1,281.6 150,308 68.9,281.6 18.8,212.6 18.8,127.4 68.9,58.4"/></clipPath>
+        <clipPath id="clipR"><polygon points="610,32 691.1,58.4 741.2,127.4 741.2,212.6 691.1,281.6 610,308 528.9,281.6 478.8,212.6 478.8,127.4 528.9,58.4"/></clipPath>
+      </defs>
+
+      <!-- bar -->
+      <rect x="286" y="162" width="188" height="16" rx="4" fill="#2e2e32" stroke="rgba(255,255,255,0.12)"/>
+      <rect x="286" y="156" width="10" height="28" rx="3" fill="#111114" stroke="rgba(255,255,255,0.15)"/>
+      <rect x="464" y="156" width="10" height="28" rx="3" fill="#111114" stroke="rgba(255,255,255,0.15)"/>
+
+      <!-- left plate: Surya -->
+      <polygon points="150,25 235.3,52.7 287.9,125.2 287.9,214.8 235.3,287.3 150,315 64.7,287.3 12.1,214.8 12.1,125.2 64.7,52.7" fill="#111114" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+      <g clip-path="url(#clipL)">
+        <image href="team-surya.jpg" x="18.8" y="25" width="262.4" height="295" preserveAspectRatio="xMidYMin slice"/>
+        <rect x="18.8" y="205" width="262.4" height="103" fill="url(#fadeG)"/>
+      </g>
+      <text x="150" y="262" text-anchor="middle" fill="#fff" font-family="'Bebas Neue', sans-serif" font-size="44" letter-spacing="1">SURYA</text>
+      <text x="150" y="283" text-anchor="middle" fill="#84CC16" font-family="'Barlow Condensed', sans-serif" font-weight="700" font-size="12" letter-spacing="1.5">CO-FOUNDER &amp; CEO</text>
+
+      <!-- right plate: Arpita -->
+      <polygon points="610,25 695.3,52.7 747.9,125.2 747.9,214.8 695.3,287.3 610,315 524.7,287.3 472.1,214.8 472.1,125.2 524.7,52.7" fill="#111114" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+      <g clip-path="url(#clipR)">
+        <image href="team-arpita.jpg" x="478.8" y="25" width="262.4" height="295" preserveAspectRatio="xMidYMin slice"/>
+        <rect x="478.8" y="205" width="262.4" height="103" fill="url(#fadeG)"/>
+      </g>
+      <text x="610" y="262" text-anchor="middle" fill="#fff" font-family="'Bebas Neue', sans-serif" font-size="44" letter-spacing="1">ARPITA</text>
+      <text x="610" y="283" text-anchor="middle" fill="#84CC16" font-family="'Barlow Condensed', sans-serif" font-weight="700" font-size="12" letter-spacing="1.5">CO-FOUNDER &amp; CTO</text>
+
+      <!-- lifter avatar: smooth curves, hands touch the bar, no feet -->
+      <g stroke="#84CC16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M330 178 Q351 210 366 236"/>
+        <path d="M430 178 Q409 210 394 236"/>
+        <path d="M366 237 Q380 245 394 237"/>
+        <path d="M380 244 Q380 270 380 293"/>
+        <path d="M380 293 Q377 322 364 347"/>
+        <path d="M380 293 Q383 322 396 347"/>
+      </g>
+      <circle cx="380" cy="220" r="15" fill="#84CC16"/>
+    </svg>
+  </div>
+</section>
+
 <!-- FEATURES -->
 <section id="features">
   <div class="features-header">
@@ -1056,8 +1247,35 @@
   window.addEventListener('scroll', () => { document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60); });
   document.querySelectorAll('a[href^="#"]').forEach(a => { a.addEventListener('click', e => { const target = document.querySelector(a.getAttribute('href')); if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); });
   document.querySelectorAll('.ftab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }); });
-  const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; } }); }, { threshold: 0.1 });
-  document.querySelectorAll('.feature-card, .step-card, .plan-card, .bento-card, .perk').forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.6s ease, transform 0.6s ease'; observer.observe(el); });
+  // Scroll reveal: fade + rise as each element scrolls into view, with a
+  // gentle stagger for siblings in a grid. Cleans up inline styles once done
+  // so CSS hover transforms stay snappy. Skipped for reduced-motion users.
+  (function(){
+    const sel = '.section-label, .section-title, .section-desc, .feature-card, .step-card, .plan-card, .bento-card, .perk, .expert-card, .team-dumbbell, .device-showcase, .store-btn';
+    const items = document.querySelectorAll(sel);
+    // Bail (leaving everything visible) if the browser can't animate this or
+    // the user prefers reduced motion — never hide content we can't reveal.
+    if (!('IntersectionObserver' in window)) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const el = e.target;
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        io.unobserve(el);
+        setTimeout(() => { el.style.transition = ''; el.style.transform = ''; }, 750);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    items.forEach(el => {
+      const sibs = Array.prototype.filter.call(el.parentElement.children, c => c.matches(sel));
+      const delay = Math.min(sibs.indexOf(el) * 0.08, 0.4);
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(26px)';
+      el.style.transition = 'opacity 0.6s ease ' + delay + 's, transform 0.6s ease ' + delay + 's';
+      io.observe(el);
+    });
+  })();
   // Phone slideshow: cycle through 3 slides every 3s
   (function(){
     const slides = document.querySelectorAll('.hero-phone-screen .phone-slide');
