@@ -6,6 +6,7 @@ import { renderSchema } from './pages/schema.js';
 import { renderPipeline } from './pages/pipeline.js';
 import { renderDatabase } from './pages/database.js';
 import { renderTrainer } from './pages/trainer.js';
+import { renderNotifications } from './pages/notifications.js';
 
 const ROUTES = [
   { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
@@ -13,6 +14,7 @@ const ROUTES = [
   { id: 'pipeline', label: 'AI Pipeline', icon: 'cpu', render: renderPipeline },
   { id: 'database', label: 'Database', icon: 'dumbbell', render: renderDatabase },
   { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
+  { id: 'notifications', label: 'Notifications', icon: 'bell', render: renderNotifications },
 ];
 
 const view = document.getElementById('view');

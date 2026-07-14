@@ -39,4 +39,14 @@ export const api = {
   saveTrainerConfig: (slug, body) => req(`/trainer/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
   trackerConfig: (slug) => req(`/tracker/${slug}/config`),
   saveTrackerConfig: (slug, body) => req(`/tracker/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  // ── Notifications ──
+  notifStatus: () => req('/notifications/status'),
+  reminders: () => req('/notifications/reminders'),
+  createReminder: (b) => req('/notifications/reminders', { method: 'POST', body: JSON.stringify(b) }),
+  updateReminder: (id, b) => req(`/notifications/reminders/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  toggleReminder: (id) => req(`/notifications/reminders/${id}/toggle`, { method: 'POST' }),
+  deleteReminder: (id) => req(`/notifications/reminders/${id}`, { method: 'DELETE' }),
+  sendNow: (b) => req('/notifications/send-now', { method: 'POST', body: JSON.stringify(b) }),
+  notifLog: () => req('/notifications/log'),
 };
