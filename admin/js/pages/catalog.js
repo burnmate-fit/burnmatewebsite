@@ -37,15 +37,21 @@ function table(rows) {
       el('thead', {}, thead), el('tbody', {}, ...body)));
 }
 
+const RENDER_CAP = 250;   // keep the DOM light; search narrows the full table
+
 async function load(which, holder, q) {
   holder.replaceChildren(spinner('Loading…'));
   try {
     const d = which === 'foods' ? await api.catalogFoods(q) : await api.catalogExercises(q);
-    const rows = which === 'foods' ? d.foods : d.exercises;
+    const all = which === 'foods' ? d.foods : d.exercises;
+    const rows = all.slice(0, RENDER_CAP);
+    const capped = all.length > RENDER_CAP;
+    const tbl = which === 'foods' ? 'rag_foods' : 'exercises';
     holder.replaceChildren(
       el('p', { class: 'text-[12px] text-neutral-500 mb-2' },
-        `${d.total} total in ${which === 'foods' ? 'rag_foods' : 'exercises'} table` +
-        (q ? ` · showing ${rows.length} match "${q}"` : ` · showing ${rows.length}`)),
+        `${d.total} total in ${tbl}` +
+        (q ? ` · ${all.length} match "${q}"` : '') +
+        (capped ? ` · showing first ${RENDER_CAP} — search to narrow` : ` · showing ${rows.length}`)),
       table(rows));
   } catch (e) {
     holder.replaceChildren(errorBox(e));
