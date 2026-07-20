@@ -28,6 +28,8 @@ async function req(path, opts = {}) {
 
 export const api = {
   status: () => req('/status'),
+  catalogFoods: (q = '') => req(`/foods?q=${encodeURIComponent(q)}&limit=1500`),
+  catalogExercises: (q = '') => req(`/planning-exercises?q=${encodeURIComponent(q)}&limit=200`),
   schema: () => req('/schema'),
   pipeline: () => req('/ai-pipeline'),
   exercises: () => req('/exercises'),
