@@ -13,11 +13,43 @@ export async function renderDatabase(view) {
   else renderFood(body);
 }
 
-function renderFood(body) {
-  const ic = icon('utensils', 'w-7 h-7'); ic.classList.add('text-neutral-600');
-  body.append(el('div', { class: 'rounded-xl border border-dashed border-line bg-surface/40 p-12 text-center' },
-    el('div', { class: 'inline-flex items-center justify-center w-14 h-14 rounded-xl border border-line mb-4' }, ic),
-    el('p', { class: 'text-neutral-500 text-sm' }, 'Food is generated per-plan by the AI — no stored catalog yet. This tab stays blank until we add a food/ingredient table.')));
+const HCELL = 'px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-neutral-500 border-b-2 border-line sticky top-0 bg-surface';
+const CELL = 'px-2.5 py-1.5 whitespace-nowrap text-[12px] border-b border-line/60';
+
+function fmtVal(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  if (Array.isArray(v)) return v.length ? v.join(', ') : '—';
+  if (typeof v === 'boolean') return v ? '✓' : '✗';
+  if (typeof v === 'number') return Number.isInteger(v) ? v : v.toFixed(1);
+  return String(v);
+}
+
+function dataTable(rows, cols, cellFor) {
+  const head = el('tr', {}, ...cols.map((c) => el('th', { class: HCELL }, c)));
+  const trs = rows.map((r) => el('tr', { class: 'hover:bg-ink/40' },
+    ...cols.map((c) => cellFor ? cellFor(r, c) : el('td', { class: CELL }, fmtVal(r[c])))));
+  return el('div', { class: 'overflow-auto max-h-[68vh] rounded-lg border border-line' },
+    el('table', { class: 'min-w-full border-collapse' },
+      el('thead', {}, head), el('tbody', {}, ...trs)));
+}
+
+async function renderFood(body) {
+  const slot = el('div', {}, spinner('Loading foods…'));
+  body.append(slot);
+  try {
+    const d = await api.catalogFoods('');
+    const all = d.foods || [];
+    const rows = all.slice(0, 250);
+    const cols = all.length ? Object.keys(all[0]).filter((c) => c !== 'id') : [];
+    slot.replaceChildren(
+      el('div', { class: 'text-sm text-neutral-500 mb-3' },
+        `${d.total} foods in rag_foods` + (all.length > 250 ? ' · showing first 250 — use the Catalog tab to search' : '')),
+      dataTable(rows, cols, (r, c) => {
+        if (c === 'diet_type') return el('td', { class: CELL }, pill(fmtVal(r[c]), r[c] === 'non-veg' ? 'danger' : r[c] === 'vegan' ? 'accent' : 'neutral'));
+        return el('td', { class: CELL }, fmtVal(r[c]));
+      }),
+    );
+  } catch (e) { slot.replaceChildren(errorBox(e)); }
 }
 
 async function renderExercises(body) {
@@ -28,39 +60,26 @@ async function renderExercises(body) {
   catch (e) { slot.replaceChildren(errorBox(e)); return; }
 
   const toolbar = el('div', { class: 'flex items-center mb-4' },
-    el('div', { class: 'text-sm text-neutral-500' }, `${list.length} exercises`),
+    el('div', { class: 'text-sm text-neutral-500' }, `${list.length} device exercises (CM5 tracker/trainer configs)`),
     el('button', { class: 'ml-auto inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-3 py-1.5 rounded-lg hover:bg-accentDim',
       onclick: () => openForm(body, null) }, icon('plus', 'w-4 h-4'), 'Add exercise'),
   );
 
-  const grid = el('div', { class: 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4' });
-  for (const ex of list) {
-    const img = ex.image_url ? (ex.image_url.startsWith('http') ? ex.image_url : API_BASE + ex.image_url) : null;
-    const fallback = () => { const i = icon('dumbbell', 'w-6 h-6'); i.classList.add('text-neutral-600'); return i; };
-    grid.append(card(
-      el('div', { class: 'flex gap-3' },
-        el('div', { class: 'w-16 h-16 rounded-lg bg-ink border border-line shrink-0 overflow-hidden flex items-center justify-center' },
-          img ? el('img', { src: img, class: 'w-full h-full object-cover', onerror: function () { this.replaceWith(fallback()); } }) : fallback()),
-        el('div', { class: 'min-w-0' },
-          el('div', { class: 'font-bold truncate' }, ex.display_name || ex.slug),
-          el('div', { class: 'text-xs text-neutral-500' }, ex.slug),
-          el('div', { class: 'flex flex-wrap gap-1 mt-1.5' },
-            ex.muscle_group ? pill(ex.muscle_group, 'accent') : null,
-            ex.sets ? pill(`sets ${ex.sets.join('/')}`) : null,
-          ),
-        ),
-      ),
-      el('div', { class: 'flex items-center gap-2 mt-3 pt-3 border-t border-line' },
-        el('span', { class: 'text-[11px] text-neutral-600 truncate flex-1' }, ex.trainer_config || 'no trainer cfg'),
-        el('button', { class: 'inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-accent', onclick: () => openForm(body, ex) }, icon('edit', 'w-3.5 h-3.5'), 'Edit'),
-        el('button', { class: 'inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-danger', onclick: async () => {
-          if (!confirm(`Delete "${ex.slug}"?`)) return;
-          await api.deleteExercise(ex.slug); renderDatabaseReset(body);
-        } }, icon('trash', 'w-3.5 h-3.5'), 'Delete'),
-      ),
-    ));
-  }
-  slot.replaceChildren(toolbar, grid);
+  const cols = ['display_name', 'slug', 'muscle_group', 'sets', 'rest_seconds', 'tracker_config', 'trainer_config'];
+  const table = dataTable(list, [...cols, 'actions'], (ex, c) => {
+    if (c === 'actions') {
+      return el('td', { class: CELL },
+        el('div', { class: 'flex gap-3' },
+          el('button', { class: 'inline-flex items-center gap-1 text-neutral-400 hover:text-accent', onclick: () => openForm(body, ex) }, icon('edit', 'w-3.5 h-3.5'), 'Edit'),
+          el('button', { class: 'inline-flex items-center gap-1 text-neutral-400 hover:text-danger', onclick: async () => {
+            if (!confirm(`Delete "${ex.slug}"?`)) return;
+            await api.deleteExercise(ex.slug); renderDatabaseReset(body);
+          } }, icon('trash', 'w-3.5 h-3.5'), 'Delete')));
+    }
+    if (c === 'muscle_group' && ex.muscle_group) return el('td', { class: CELL }, pill(ex.muscle_group, 'accent'));
+    return el('td', { class: CELL }, fmtVal(ex[c]));
+  });
+  slot.replaceChildren(toolbar, table);
 }
 
 function renderDatabaseReset(body) {
