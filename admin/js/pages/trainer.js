@@ -117,15 +117,17 @@ function makeIntroPreviewCard(intro, stage) {
   stage.querySelector('[data-intro-overlay]')?.remove();
   const overlay = el('div', { 'data-intro-overlay': 'true', class: 'absolute inset-x-0 bottom-0 z-10 text-center px-8 py-7 pointer-events-none',
     style: 'background:linear-gradient(transparent,rgba(13,15,12,.96))' });
-  const title = el('div', { class: 'text-xl font-black text-white' });
+  const oneLine = intro.text_style?.show_subtitle === false || Number(intro.text_style?.max_lines || 2) <= 1;
+  const title = el('div', { class: oneLine ? 'text-3xl font-black text-white' : 'text-xl font-black text-white' });
   const subtitle = el('div', { class: 'text-sm text-neutral-300 mt-1' });
+  if (oneLine) subtitle.hidden = true;
   overlay.append(title, subtitle);
   stage.append(overlay);
   const status = el('div', { class: 'text-xs text-neutral-500 mt-2' });
   const stepBar = el('div', { class: 'flex flex-wrap gap-2 mt-3' });
   const preview = new IntroPreview(player, ({ step, phase, fade, elapsed, total, view }) => {
     title.textContent = step.title || '';
-    subtitle.textContent = step.subtitle || '';
+    subtitle.textContent = oneLine ? '' : (step.subtitle || '');
     overlay.style.opacity = String(fade);
     status.textContent = `${phase} · ${elapsed.toFixed(1)} / ${total.toFixed(1)} s · ${view} view`;
     stepBar.querySelectorAll('button').forEach((button, index) => button.classList.toggle('border-accent', index === (intro.timeline || []).indexOf(step)));

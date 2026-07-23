@@ -5,7 +5,7 @@
   "enabled": true,
   "play_policy": "always",
   "presentation": {"view":"front","fixed_height":true,"avatar_anchor_mode":"fixed_center","fixed_avatar_center_x":0.5,"fixed_avatar_ground_y":0.88,"fixed_avatar_height":0.74,"avatar_alpha":0.82,"show_floor_line":false,"show_angle_guides":false,"show_user_camera":false,"run_pose_tracking":false,"fade_in_s":0.25,"fade_out_s":0.2},
-  "text_style": {"position":"bottom_center","max_lines":2,"title_size":"large","subtitle_size":"medium","fade_s":0.18,"show_step_counter":false},
+  "text_style": {"position":"bottom_center","max_lines":1,"title_size":"tv_large","show_subtitle":false,"subtitle_size":"medium","fade_s":0.18,"show_step_counter":false},
   "timeline": [
     {"id":"stand_tall","title":"Stand tall","subtitle":"Face forward and relax","from_pose":"neutral_stand","to_pose":"neutral_stand","instruction_hold_s":0.25,"transition_s":0,"result_hold_s":1,"easing":"linear"},
     {"id":"set_stance","title":"Feet shoulder-width apart","subtitle":"Point your toes slightly outward","from_pose":"neutral_stand","to_pose":"wide_stance","instruction_hold_s":0.3,"transition_s":0.65,"result_hold_s":1,"easing":"smoothstep"},
