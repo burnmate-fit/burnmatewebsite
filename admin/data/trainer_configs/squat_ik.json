@@ -1,0 +1,64 @@
+{
+  "trainer_animation": {
+    "schema_version": 2,
+    "mode": "biomech_fk_ik",
+    "exercise_type": "angle_reps",
+    "view": "side",
+    "solver": { "type": "fk_contact_ik", "smoothing": 0.72, "allow_stretch": false },
+    "body_profile": {
+      "shoulder_width": 0.36,
+      "hip_width": 0.20,
+      "torso_length": 0.35,
+      "neck_length": 0.15,
+      "head_length": 0.15,
+      "shoulder_rise": 0.12,
+      "femur_length": 0.435,
+      "tibia_length": 0.44,
+      "upper_arm_length": 0.275,
+      "forearm_length": 0.265,
+      "foot_length": 0.26,
+      "toe_drop": 0.05,
+      "heel_back": 0.10
+    },
+    "contacts": {
+      "stance_width": 0.24,
+      "ground_y": 0.03,
+      "ankle_height": 0.08,
+      "foot_z": 0.0,
+      "foot_forward": 0.26
+    },
+    "constraints": {
+      "knee_plane": "local_sagittal",
+      "feet": "heel_and_toe_planted",
+      "balance": "midfoot"
+    },
+    "phases": [
+      { "name": "stand", "from": "stand", "to": "stand" },
+      { "name": "descend", "from": "stand", "to": "bottom" },
+      { "name": "bottom", "from": "bottom", "to": "bottom" },
+      { "name": "ascend", "from": "bottom", "to": "stand" },
+      { "name": "return_stand", "from": "stand", "to": "stand" }
+    ],
+    "motion": {
+      "schema": "joint_space_v1",
+      "keyframes": {
+        "stand": {
+          "thigh_pitch_deg": 0,
+          "shank_pitch_deg": 0,
+          "torso_pitch_deg": 0,
+          "upper_arm_pitch_deg": 90,
+          "forearm_pitch_deg": 90,
+          "knee_lateral_ratio": 0.5
+        },
+        "bottom": {
+          "thigh_pitch_deg": 73,
+          "shank_pitch_deg": -25,
+          "torso_pitch_deg": 32,
+          "upper_arm_pitch_deg": 90,
+          "forearm_pitch_deg": 90,
+          "knee_lateral_ratio": 0.5
+        }
+      }
+    }
+  }
+}

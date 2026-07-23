@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
-import { STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets, lerpTargets, buildIkPose } from './solver.js';
+import { STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets, lerpTargets, buildIkPose, poseAtDepth } from './solver.js';
 
 // editor carry-along: moving a joint drags these explicit targets WITH it
 // (a bone-hierarchy feel without breaking the flat target data the CM5 reads).
@@ -261,6 +261,7 @@ export class AvatarPlayer {
 
   _poseAt(depth) {
     if (!this.anim) return STAND;
+    if (String(this.anim.mode || '').toLowerCase() === 'biomech_fk_ik') return poseAtDepth(this.anim, depth);
     const targets = lerpTargets(this.standT, this.bottomT, depth);
     return buildIkPose(targets, this.anim);
   }

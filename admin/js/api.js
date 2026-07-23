@@ -39,6 +39,10 @@ export const api = {
   deleteExercise: (slug) => req(`/exercises/${slug}`, { method: 'DELETE' }),
   trainerConfig: (slug) => req(`/trainer/${slug}/config`),
   saveTrainerConfig: (slug, body) => req(`/trainer/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
+  trainerRawConfig: (slug) => req(`/trainer/${slug}/raw-config`),
+  saveTrainerRawConfig: (slug, config) => req(`/trainer/${slug}/raw-config`, { method: 'PUT', body: JSON.stringify({ config }) }),
+  introConfig: (slug) => req(`/trainer/${slug}/intro-config`),
+  saveIntroConfig: (slug, config) => req(`/trainer/${slug}/intro-config`, { method: 'PUT', body: JSON.stringify({ config }) }),
   trackerConfig: (slug) => req(`/tracker/${slug}/config`),
   saveTrackerConfig: (slug, body) => req(`/tracker/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
 

@@ -117,10 +117,93 @@ export function buildIkPose(targets, config) {
 // Convenience: full pose at a given rep depth (0=stand, 1=bottom) for an
 // ik_3d trainer_animation block — mirrors the coach feeding a depth value.
 export function poseAtDepth(anim, depth) {
+  if (String(anim?.mode || '').toLowerCase() === 'biomech_fk_ik') {
+    const keyframes = anim.motion?.keyframes || {};
+    const stand = keyframes.stand || {};
+    const bottom = keyframes.bottom || stand;
+    const params = {};
+    for (const key of new Set([...Object.keys(stand), ...Object.keys(bottom)])) {
+      const a = Number(stand[key] ?? bottom[key] ?? 0);
+      const b = Number(bottom[key] ?? stand[key] ?? a);
+      if (Number.isFinite(a) && Number.isFinite(b)) params[key] = a * (1 - depth) + b * depth;
+    }
+    return buildBiomechFkPose(params, anim);
+  }
   const kf = anim.keyframes || {};
   const a = coerceTargets(kf.stand || {});
   const b = coerceTargets(kf.bottom || kf.stand || {});
   return buildIkPose(lerpTargets(a, b, depth), anim);
+}
+
+// ── joint-space FK/contact solver (CM5 rig.py parity) ─────────────────────
+// This has no exercise names or pose names: any schema-v2 JSON can author
+// motion through segment pitches, fixed body proportions and foot contacts.
+const finiteNumber = (value, fallback) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+const downSegment = (length, pitch, xDelta = 0) => {
+  const sagittal = Math.sqrt(Math.max(0, length * length - xDelta * xDelta));
+  return [xDelta, -sagittal * Math.cos(pitch), sagittal * Math.sin(pitch)];
+};
+const upSegment = (length, pitch) => [0, length * Math.cos(pitch), length * Math.sin(pitch)];
+
+export function buildBiomechFkPose(params = {}, config = {}) {
+  const body = config.body_profile || {};
+  const contacts = config.contacts || {};
+  const value = (name, fallback) => finiteNumber(body[name], fallback);
+  const shoulderW = value('shoulder_width', 0.36);
+  const hipW = value('hip_width', 0.20);
+  const femur = value('femur_length', 0.435);
+  const tibia = value('tibia_length', 0.44);
+  const torso = value('torso_length', 0.35);
+  const neckLength = value('neck_length', 0.15);
+  const headLength = value('head_length', 0.15);
+  const shoulderRise = value('shoulder_rise', 0.12);
+  const upperArm = value('upper_arm_length', 0.275);
+  const forearm = value('forearm_length', 0.265);
+  const footLength = value('foot_length', 0.16);
+  const heelBack = value('heel_back', 0.08);
+  const stance = finiteNumber(contacts.stance_width, 0.24);
+  const groundY = finiteNumber(contacts.ground_y, 0.03);
+  const ankleHeight = finiteNumber(contacts.ankle_height, 0.08);
+  const footForward = finiteNumber(contacts.foot_forward, footLength);
+  const footZ = finiteNumber(contacts.foot_z, 0);
+  const radians = (name) => finiteNumber(params[name], 0) * Math.PI / 180;
+  const thighPitch = radians('thigh_pitch_deg');
+  const shankPitch = radians('shank_pitch_deg');
+  const torsoPitch = radians('torso_pitch_deg');
+  const upperArmPitch = radians('upper_arm_pitch_deg');
+  const forearmPitch = radians('forearm_pitch_deg');
+  const kneeRatio = Math.max(0, Math.min(1, finiteNumber(params.knee_lateral_ratio, 0.5)));
+  const ankleX = stance / 2;
+  const hipX = hipW / 2;
+  const kneeX = hipX * (1 - kneeRatio) + ankleX * kneeRatio;
+  const upper = downSegment(femur, thighPitch, kneeX - hipX);
+  const lower = downSegment(tibia, shankPitch, ankleX - kneeX);
+  const hipY = ankleHeight - upper[1] - lower[1];
+  const hipZ = footZ - upper[2] - lower[2];
+  const pelvis = [0, hipY, hipZ];
+  const chest = add(pelvis, upSegment(torso, torsoPitch));
+  const neck = add(chest, upSegment(neckLength, torsoPitch));
+  const head = add(neck, upSegment(headLength, torsoPitch));
+  const shoulderCenter = add(chest, upSegment(shoulderRise, torsoPitch));
+  const pose = { pelvis, chest, neck, head };
+  for (const [side, sign] of [['l', 1], ['r', -1]]) {
+    const hip = [sign * hipX, hipY, hipZ];
+    const knee = add(hip, [sign * upper[0], upper[1], upper[2]]);
+    const ankle = [sign * ankleX, ankleHeight, footZ];
+    const shoulder = [sign * shoulderW / 2, shoulderCenter[1], shoulderCenter[2]];
+    const elbow = add(shoulder, downSegment(upperArm, upperArmPitch));
+    const wrist = add(elbow, downSegment(forearm, forearmPitch));
+    Object.assign(pose, {
+      [`${side}_hip`]: hip, [`${side}_knee`]: knee, [`${side}_ankle`]: ankle,
+      [`${side}_toe`]: [ankle[0], groundY, ankle[2] + footForward],
+      [`${side}_heel`]: [ankle[0], groundY, ankle[2] - heelBack],
+      [`${side}_shoulder`]: shoulder, [`${side}_elbow`]: elbow, [`${side}_wrist`]: wrist,
+    });
+  }
+  return pose;
 }
 
 // ── auto-derive rep detection from the posed stickman ───────────────────────
