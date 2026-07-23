@@ -2,10 +2,12 @@ import { api } from '../api.js';
 import { el, header, card, spinner, errorBox, pill } from '../ui.js';
 import { icon } from '../icons.js';
 import { AvatarPlayer } from '../avatar.js';
+import { IntroPreview } from '../intro_preview.js';
 import { deriveRep, buildTrackerConfig } from '../solver.js';
 import { PoseTester } from '../posetest.js';
 
 let player = null;
+let introPreview = null;
 
 // a blank exercise skeleton for "New" — stand + bottom seeded from the rig rest pose
 const NEW_ANIM = {
@@ -48,22 +50,39 @@ export async function renderTrainer(view) {
   player = new AvatarPlayer(stage);
 
   select.addEventListener('change', () => { if (select.value) previewMode(panel, select.value, exercises, stage); });
-  newBtn.addEventListener('click', () => { select.value = ''; editMode(panel, null, exercises); });
+  newBtn.addEventListener('click', () => {
+    introPreview?.dispose(); introPreview = null;
+    stage.querySelector('[data-intro-overlay]')?.remove();
+    select.value = ''; editMode(panel, null, exercises);
+  });
 
   // start by previewing the first real exercise, if any
-  const first = exercises.find((e) => e.trainer_config);
+  const first = exercises.find((e) => e.slug === 'squat' && e.trainer_config)
+    || exercises.find((e) => e.trainer_config);
   if (first) { select.value = first.slug; previewMode(panel, first.slug, exercises, stage); }
   else editMode(panel, null, exercises);
 }
 
 // ── PREVIEW: play the saved config + webcam live-test ────────────────────────
 async function previewMode(panel, slug, exercises, stage) {
+  introPreview?.dispose();
+  introPreview = null;
+  stage.querySelector('[data-intro-overlay]')?.remove();
   player.endEdit();
   panel.replaceChildren(spinner('Loading config…'));
   let cfg;
   try { cfg = await api.trainerConfig(slug); }
   catch (e) { panel.replaceChildren(errorBox(e)); return; }
   player.setConfig(cfg.trainer_animation);
+
+  // Local, code-owned intro configs are intentionally used for this first
+  // rollout.  The player itself is generic; future configs only need another
+  // JSON file at data/intro_configs/<slug>_intro.json.
+  let intro = null;
+  try {
+    const response = await fetch(`data/intro_configs/${encodeURIComponent(slug)}_intro.json`);
+    if (response.ok) intro = await response.json();
+  } catch { /* exercises without an intro keep the normal preview */ }
 
   const depth = el('input', { type: 'range', min: '0', max: '100', value: '0', class: 'flex-1 accent-accent' });
   const playBtn = el('button', { class: 'inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' });
@@ -75,8 +94,10 @@ async function previewMode(panel, slug, exercises, stage) {
   playBtn.onclick = () => { if (player.playing) { player.pause(); setPlay(false); } else { player.play(); setPlay(true); } };
   player.onDepth = (d) => { depth.value = Math.round(d * 100); };
   depth.oninput = () => { player.pause(); setPlay(false); player.setDepth(depth.value / 100); };
-  editBtn.onclick = () => editMode(panel, { slug, cfg }, exercises);
+  editBtn.onclick = () => { introPreview?.dispose(); introPreview = null; stage.querySelector('[data-intro-overlay]')?.remove(); editMode(panel, { slug, cfg }, exercises); };
   testBtn.onclick = () => startWebcamTest(stage, slug, testBtn);
+
+  const introCard = intro ? makeIntroPreviewCard(intro, stage) : null;
 
   panel.replaceChildren(
     card(
@@ -85,9 +106,48 @@ async function previewMode(panel, slug, exercises, stage) {
         el('div', { class: 'flex items-center gap-2 flex-1' }, el('span', { class: 'text-xs text-neutral-500' }, 'depth'), depth)),
       el('div', { class: 'flex gap-2 mt-3' }, editBtn, testBtn),
     ),
+    ...(introCard ? [introCard] : []),
     card(el('div', { class: 'text-xs text-neutral-500 leading-relaxed' },
       el('span', { class: 'text-accent font-semibold' }, 'Parity: '),
       'this avatar is a direct port of the CM5 solver — what you design here is what the board shows.')),
+  );
+}
+
+function makeIntroPreviewCard(intro, stage) {
+  stage.querySelector('[data-intro-overlay]')?.remove();
+  const overlay = el('div', { 'data-intro-overlay': 'true', class: 'absolute inset-x-0 bottom-0 z-10 text-center px-8 py-7 pointer-events-none',
+    style: 'background:linear-gradient(transparent,rgba(13,15,12,.96))' });
+  const title = el('div', { class: 'text-xl font-black text-white' });
+  const subtitle = el('div', { class: 'text-sm text-neutral-300 mt-1' });
+  overlay.append(title, subtitle);
+  stage.append(overlay);
+  const status = el('div', { class: 'text-xs text-neutral-500 mt-2' });
+  const stepBar = el('div', { class: 'flex flex-wrap gap-2 mt-3' });
+  const preview = new IntroPreview(player, ({ step, phase, fade, elapsed, total, view }) => {
+    title.textContent = step.title || '';
+    subtitle.textContent = step.subtitle || '';
+    overlay.style.opacity = String(fade);
+    status.textContent = `${phase} · ${elapsed.toFixed(1)} / ${total.toFixed(1)} s · ${view} view`;
+    stepBar.querySelectorAll('button').forEach((button, index) => button.classList.toggle('border-accent', index === (intro.timeline || []).indexOf(step)));
+  });
+  introPreview = preview;
+
+  const play = el('button', { class: 'inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-3 py-2 rounded-lg' });
+  const setPlay = (playing) => play.replaceChildren(icon(playing ? 'pause' : 'play', 'w-4 h-4'), playing ? 'Pause intro' : 'Play intro');
+  setPlay(false);
+  play.onclick = () => { if (preview.playing) { preview.pause(); setPlay(false); } else { preview.play(); setPlay(true); } };
+  const replay = el('button', { class: 'text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, 'Replay');
+  replay.onclick = () => { preview.replay(); setPlay(true); };
+  (intro.timeline || []).forEach((step, index) => stepBar.append(el('button', {
+    class: 'text-xs border border-line rounded-md px-2 py-1 text-neutral-300 hover:border-accent',
+    onclick: () => { preview.pause(); setPlay(false); preview.showStep(index); },
+  }, `${index + 1}. ${step.title}`)));
+  preview.setConfig(intro);
+  return card(
+    el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Pre-exercise intro — local JSON'),
+    el('div', { class: 'flex gap-2 items-center' }, play, replay, pill(`${preview.totalDuration().toFixed(1)} s`, 'accent')),
+    status,
+    stepBar,
   );
 }
 

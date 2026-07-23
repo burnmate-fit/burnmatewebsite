@@ -1,0 +1,30 @@
+{
+  "intro_schema_version": 1,
+  "intro_config_id": "squat_intro",
+  "exercise": "squat",
+  "enabled": true,
+  "play_policy": "always",
+  "presentation": {"view":"front","fixed_height":true,"avatar_anchor_mode":"fixed_center","fixed_avatar_center_x":0.5,"fixed_avatar_ground_y":0.88,"fixed_avatar_height":0.74,"avatar_alpha":0.82,"show_floor_line":false,"show_angle_guides":false,"show_user_camera":false,"run_pose_tracking":false,"fade_in_s":0.25,"fade_out_s":0.2},
+  "text_style": {"position":"bottom_center","max_lines":2,"title_size":"large","subtitle_size":"medium","fade_s":0.18,"show_step_counter":false},
+  "timeline": [
+    {"id":"stand_tall","title":"Stand tall","subtitle":"Face forward and relax","from_pose":"neutral_stand","to_pose":"neutral_stand","instruction_hold_s":0.25,"transition_s":0,"result_hold_s":1,"easing":"linear"},
+    {"id":"set_stance","title":"Feet shoulder-width apart","subtitle":"Point your toes slightly outward","from_pose":"neutral_stand","to_pose":"wide_stance","instruction_hold_s":0.3,"transition_s":0.65,"result_hold_s":1,"easing":"smoothstep"},
+    {"id":"hands_forward","title":"Hands forward for balance","subtitle":"Keep your shoulders relaxed","from_pose":"wide_stance","to_pose":"squat_ready","instruction_hold_s":0.3,"transition_s":0.55,"result_hold_s":0.9,"easing":"smoothstep"},
+    {"id":"squat_down","title":"Sit down and back","subtitle":"Chest up • knees in line with toes","from_pose":"squat_ready","to_pose":"squat_bottom","instruction_hold_s":0.35,"transition_s":1.65,"result_hold_s":1.05,"easing":"ease_in_out_cubic"},
+    {"id":"stand_up","title":"Stand back up","subtitle":"Push through your feet","from_pose":"squat_bottom","to_pose":"squat_ready","instruction_hold_s":0.3,"transition_s":1.25,"result_hold_s":0.9,"easing":"ease_out_cubic"}
+  ],
+  "handoff": {"target":"live_trainer","hold_pose":"squat_ready","preferred_transition":"rotate_to_live_view","rotation_s":0.4,"fallback_transition":"crossfade","crossfade_s":0.4},
+  "validation": {"symmetric_poses":["neutral_stand","wide_stance","squat_ready","squat_bottom"],"require_planted_contacts":true},
+  "trainer_animation": {
+    "schema_version":1,"mode":"ik_3d","view":"front","solver":{"type":"two_bone","smoothing":0.72,"allow_stretch":false},
+    "body":{"shoulder_width":0.36,"hip_width":0.2,"neck_offset":[0,0.15,0],"head_offset":[0,0.3,0]},
+    "chains":{"left_arm":{"hint":[0,-1,0.6],"hint_space":"avatar_local"},"right_arm":{"hint":[0,-1,0.6],"hint_space":"avatar_local"},"left_leg":{"hint":[0.2,0,1],"hint_space":"avatar_local"},"right_leg":{"hint":[-0.2,0,1],"hint_space":"avatar_local"}},
+    "contacts":{"pinned":["l_ankle","r_ankle"],"keep_toes_on_floor":true},
+    "poses": {
+      "neutral_stand":{"targets":{"pelvis":[0,0.95,0],"chest":[0,1.3,0],"l_wrist":[0.28,0.92,0.02],"r_wrist":[-0.28,0.92,0.02],"l_ankle":[0.08,0.08,0],"r_ankle":[-0.08,0.08,0],"l_toe":[0.09,0.03,0.16],"r_toe":[-0.09,0.03,0.16]}},
+      "wide_stance":{"targets":{"pelvis":[0,0.95,0],"chest":[0,1.3,0],"l_wrist":[0.28,0.92,0.02],"r_wrist":[-0.28,0.92,0.02],"l_ankle":[0.18,0.08,0],"r_ankle":[-0.18,0.08,0],"l_toe":[0.24,0.03,0.16],"r_toe":[-0.24,0.03,0.16]}},
+      "squat_ready":{"targets":{"pelvis":[0,0.95,0],"chest":[0,1.3,0],"l_wrist":[0.2,1.18,0.42],"r_wrist":[-0.2,1.18,0.42],"l_ankle":[0.18,0.08,0],"r_ankle":[-0.18,0.08,0],"l_toe":[0.24,0.03,0.16],"r_toe":[-0.24,0.03,0.16]}},
+      "squat_bottom":{"targets":{"pelvis":[0,0.52,-0.1],"chest":[0,0.84,0.05],"l_wrist":[0.21,0.98,0.47],"r_wrist":[-0.21,0.98,0.47],"l_ankle":[0.18,0.08,0],"r_ankle":[-0.18,0.08,0],"l_toe":[0.24,0.03,0.16],"r_toe":[-0.24,0.03,0.16]}}
+    }
+  }
+}

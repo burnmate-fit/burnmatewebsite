@@ -248,6 +248,17 @@ export class AvatarPlayer {
     this.setDepth(this.depth);
   }
 
+  // Generic fixed-pose entry point used by JSON intro sequences.  It shares
+  // the exact IK solver and mesh path with the normal trainer preview; an
+  // intro is only a different timeline, never a second avatar implementation.
+  setIntroPose(targets, introAnimation, view = 'front') {
+    this.pause();
+    this.anim = introAnimation || {};
+    this.view = view || this.anim.view || 'front';
+    this._applyView();
+    this._applyPose(buildIkPose(coerceTargets(targets), this.anim));
+  }
+
   _poseAt(depth) {
     if (!this.anim) return STAND;
     const targets = lerpTargets(this.standT, this.bottomT, depth);
@@ -270,7 +281,16 @@ export class AvatarPlayer {
     for (const k of ['l_wrist', 'r_wrist']) this.hands[k].position.copy(V(k));
     for (const k of ['l_ankle', 'r_ankle']) {
       const ankle = V(k); const toe = V(k.replace('ankle', 'toe'));
-      this.feet[k].position.copy(ankle).add(toe).multiplyScalar(0.5);
+      const direction = new THREE.Vector3().subVectors(toe, ankle); direction.y = 0;
+      if (direction.lengthSq() < 1e-8) direction.set(0, 0, 1);
+      direction.normalize();
+      const heel = ankle.clone().addScaledVector(direction, -0.06);
+      const tip = toe.clone().addScaledVector(direction, 0.02);
+      heel.y = tip.y = 0.035;
+      const span = heel.distanceTo(tip);
+      this.feet[k].position.copy(heel).add(tip).multiplyScalar(0.5);
+      this.feet[k].quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(direction.x, direction.z));
+      this.feet[k].scale.set(1, 1, span / 0.22);
     }
     if (this.editing && this.handleMeshes) this._placeHandles();
     this._renderOnce();
