@@ -8,6 +8,7 @@ import { renderDatabase } from './pages/database.js';
 import { renderTrainer } from './pages/trainer.js';
 import { renderNotifications } from './pages/notifications.js';
 import { renderCatalog } from './pages/catalog.js';
+import { renderUsers } from './pages/users.js';
 
 const ROUTES = [
   { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
@@ -17,6 +18,7 @@ const ROUTES = [
   { id: 'catalog', label: 'Catalog', icon: 'table', render: renderCatalog },
   { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
   { id: 'notifications', label: 'Notifications', icon: 'bell', render: renderNotifications },
+  { id: 'users', label: 'Users', icon: 'person', render: renderUsers },
 ];
 
 const view = document.getElementById('view');
