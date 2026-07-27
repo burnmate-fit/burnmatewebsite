@@ -16,8 +16,7 @@ export async function renderUsers(view) {
 
   let exercises = [];
   try {
-    exercises = await api.catalogExercises();
-    exercises = exercises.exercises || [];
+    exercises = await api.exercises();
   } catch (e) {
     console.error("Failed to load exercises for dropdowns", e);
   }
