@@ -258,7 +258,7 @@ function jsonMode(panel, context, exercises, liveStage, introStage, introWrap) {
   back.onclick = () => previewMode(panel, slug, exercises, liveStage, introStage, introWrap);
   panel.replaceChildren(
     hybridInfoCard(),
-    card(el('div', { class: 'flex gap-2 flex-wrap' }, back, pill(`trainer: ${trainerSource}`), pill(`intro: ${introSource}`)),
+    card(el('div', { class: 'flex gap-2 flex-wrap' }, back, pill(`trainer: ${trainerSource}`), pill(`intro: ${introSource}`))),
     card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Live trainer JSON — backend'), trainerCode,
       el('div', { class: 'flex gap-2 mt-3' }, applyTrainerBtn, saveTrainerBtn)),
     card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Pre-exercise intro JSON — backend'), introCode,
