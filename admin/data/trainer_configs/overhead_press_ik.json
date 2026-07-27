@@ -1,0 +1,88 @@
+{
+  "trainer_animation": {
+    "schema_version": 2,
+    "mode": "biomech_fk_ik",
+    "exercise_type": "angle_reps",
+    "view": "front",
+    "motion": {
+      "schema": "joint_space_v1",
+      "keyframes": {
+        "stand": {
+          "thigh_pitch_deg": 0,
+          "shank_pitch_deg": 0,
+          "torso_pitch_deg": 0,
+          "upper_arm_pitch_deg": 0,
+          "forearm_pitch_deg": 180,
+          "knee_lateral_ratio": 0.5
+        },
+        "bottom": {
+          "thigh_pitch_deg": 0,
+          "shank_pitch_deg": 0,
+          "torso_pitch_deg": 0,
+          "upper_arm_pitch_deg": 180,
+          "forearm_pitch_deg": 180,
+          "knee_lateral_ratio": 0.5
+        }
+      }
+    },
+    "phases": [
+      {
+        "to": "stand",
+        "from": "stand",
+        "name": "stand"
+      },
+      {
+        "to": "bottom",
+        "from": "stand",
+        "name": "descend"
+      },
+      {
+        "to": "bottom",
+        "from": "bottom",
+        "name": "bottom"
+      },
+      {
+        "to": "stand",
+        "from": "bottom",
+        "name": "ascend"
+      },
+      {
+        "to": "stand",
+        "from": "stand",
+        "name": "return_stand"
+      }
+    ],
+    "solver": {
+      "type": "fk_contact_ik",
+      "smoothing": 0.72,
+      "allow_stretch": false
+    },
+    "contacts": {
+      "foot_z": 0.0,
+      "ground_y": 0.03,
+      "ankle_height": 0.08,
+      "foot_forward": 0.26,
+      "stance_width": 0.24
+    },
+    "constraints": {
+      "feet": "heel_and_toe_planted",
+      "balance": "midfoot",
+      "knee_plane": "local_sagittal"
+    },
+    "body_profile": {
+      "toe_drop": 0.05,
+      "heel_back": 0.1,
+      "hip_width": 0.2,
+      "foot_length": 0.26,
+      "head_length": 0.15,
+      "neck_length": 0.15,
+      "femur_length": 0.435,
+      "tibia_length": 0.44,
+      "torso_length": 0.35,
+      "shoulder_rise": 0.12,
+      "forearm_length": 0.265,
+      "shoulder_width": 0.36,
+      "upper_arm_length": 0.275
+    }
+  }
+}
