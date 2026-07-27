@@ -58,3 +58,15 @@ export function pill(text, tone = 'neutral') {
   };
   return el('span', { class: `text-[11px] px-2 py-0.5 rounded-full ${tones[tone] || tones.neutral}` }, text);
 }
+
+export function button(label, variant = 'primary', size = 'md') {
+  const sizes = { sm: 'text-xs px-2.5 py-1.5', md: 'text-sm px-3 py-2', lg: 'text-sm px-4 py-2.5' };
+  const variants = {
+    primary: 'bg-accent text-ink font-semibold hover:bg-accentDim',
+    outline: 'border border-line text-neutral-300 hover:border-accent',
+    danger: 'bg-danger text-white font-semibold',
+  };
+  return el('button', {
+    class: `inline-flex items-center justify-center gap-1.5 rounded-lg ${sizes[size] || sizes.md} ${variants[variant] || variants.primary}`,
+  }, label);
+}
