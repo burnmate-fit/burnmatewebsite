@@ -51,9 +51,9 @@
           "knee_lateral_ratio": 0.5
         },
         "bottom": {
-          "thigh_pitch_deg": 73,
-          "shank_pitch_deg": -25,
-          "torso_pitch_deg": 32,
+          "thigh_pitch_deg": 90,
+          "shank_pitch_deg": -40,
+          "torso_pitch_deg": 45,
           "upper_arm_pitch_deg": 90,
           "forearm_pitch_deg": 90,
           "knee_lateral_ratio": 0.5
