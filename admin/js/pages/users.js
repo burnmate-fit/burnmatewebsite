@@ -72,11 +72,15 @@ export async function renderUsers(view) {
   function renderUserPlan(userId, userEmail, plan, container) {
     container.innerHTML = '';
     
+    const progressBtn = button('View Progress', 'outline', 'sm');
+    progressBtn.onclick = () => renderUserProgress(userId, userEmail, plan, container);
+
     container.append(el('div', { class: 'flex items-center justify-between mb-6' },
       el('div', {},
         el('h2', { class: 'text-lg font-bold text-white' }, `Plan for ${userEmail}`),
         el('div', { class: 'text-xs text-neutral-400 mt-1' }, `Plan ID: ${plan.id}`)
-      )
+      ),
+      progressBtn
     ));
     
     let fitnessNode = (plan.fitness_nodes || []).find(n => n.node_type === 'weekly_workout_schedule');
@@ -231,6 +235,80 @@ export async function renderUsers(view) {
       el('div', { class: 'text-xs text-neutral-400 mt-1 mb-2 uppercase tracking-wide' }, dayInfo.workout_focus),
       exList
     );
+  }
+
+  async function renderUserProgress(userId, userEmail, plan, container) {
+    container.innerHTML = '';
+    const backBtn = button('Back to Plan', 'outline', 'sm');
+    backBtn.onclick = () => renderUserPlan(userId, userEmail, plan, container);
+
+    const resetBtn = button('Reset Today\'s Progress', 'primary', 'sm');
+    resetBtn.onclick = async () => {
+        if (!confirm("Are you sure you want to reset today's progress? This will delete the session.")) return;
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Resetting...';
+        try {
+            const res = await fetch(`${API_BASE}/admin/api/users/${userId}/progress/reset`, { method: 'POST' });
+            if (!res.ok) throw new Error('Failed to reset');
+            renderUserProgress(userId, userEmail, plan, container);
+        } catch (e) {
+            alert('Reset failed: ' + e.message);
+            resetBtn.disabled = false;
+            resetBtn.textContent = 'Reset Today\'s Progress';
+        }
+    };
+
+    container.append(el('div', { class: 'flex items-center justify-between mb-6' },
+      el('div', {},
+        el('h2', { class: 'text-lg font-bold text-white' }, `Progress for ${userEmail}`)
+      ),
+      el('div', { class: 'flex gap-2' }, backBtn, resetBtn)
+    ));
+
+    const content = el('div', { class: 'space-y-4' }, spinner('Loading progress...'));
+    container.append(content);
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/api/users/${userId}/progress`);
+        if (!res.ok) throw new Error('Failed to fetch progress');
+        const sessions = await res.json();
+        
+        content.innerHTML = '';
+        if (sessions.length === 0) {
+            content.append(el('div', { class: 'text-sm text-neutral-400' }, 'No recent workout sessions found.'));
+            return;
+        }
+
+        sessions.forEach(session => {
+            const checklist = session.checklist || [];
+            const exList = el('div', { class: 'mt-2 space-y-1' });
+            
+            if (checklist.length === 0) {
+                 exList.append(el('div', { class: 'text-xs text-neutral-500 italic' }, 'No exercises recorded.'));
+            } else {
+                checklist.forEach(c => {
+                    const isCompleted = c.completed;
+                    exList.append(el('div', { class: 'flex justify-between items-center py-1.5 border-b border-line/30 text-sm' },
+                       el('span', { class: isCompleted ? 'text-green-400 font-medium' : 'text-neutral-200' }, c.name || c.exercise_slug),
+                       el('span', { class: 'text-neutral-400 text-xs' }, `${c.actual_reps || 0} reps total`)
+                    ));
+                });
+            }
+
+            // Make today's session highlighted
+            const isToday = new Date().toISOString().split('T')[0] === session.date;
+            content.append(card(
+                el('div', { class: 'flex justify-between items-center' },
+                   el('div', { class: 'font-bold ' + (isToday ? 'text-accent' : 'text-neutral-300') }, 
+                      session.date ? new Date(session.date).toLocaleDateString(undefined, {weekday: 'long', month: 'short', day: 'numeric'}) : 'Unknown Date'),
+                   isToday ? el('span', { class: 'text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded-full uppercase' }, 'Today') : ''
+                ),
+                exList
+            ));
+        });
+    } catch (e) {
+        content.replaceChildren(errorBox(e));
+    }
   }
 
   loadUsers();
