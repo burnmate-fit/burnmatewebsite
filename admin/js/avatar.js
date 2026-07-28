@@ -5,7 +5,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
-import { STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets, lerpTargets, buildIkPose, poseAtDepth } from './solver.js';
+import {
+  STAND, BONES, JOINT_SPHERES, ELLIPSOIDS, coerceTargets,
+  buildIkPose, poseAtDepth, poseForPhase,
+} from './solver.js';
 
 // editor carry-along: moving a joint drags these explicit targets WITH it
 // (a bone-hierarchy feel without breaking the flat target data the CM5 reads).
@@ -232,18 +235,56 @@ export class AvatarPlayer {
   }
 
   _applyView() {
-    if (this.view === 'front') this.camera.position.set(0, 0.95, 3.4);
-    else this.camera.position.set(3.4, 0.95, 0.0); // side: look down -X
-    this.camera.lookAt(0, 0.9, 0);
-    if (this.orbit) { this.orbit.target.set(0, 0.9, 0); this.orbit.update(); }
+    const bounds = this._frameBounds || { minX: -0.35, maxX: 0.35, minY: 0, maxY: 1.75, minZ: -0.3, maxZ: 0.5 };
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    const centerZ = (bounds.minZ + bounds.maxZ) / 2;
+    const verticalHalf = Math.max(0.4, (bounds.maxY - bounds.minY) / 2 + 0.18);
+    const horizontalHalf = this.view === 'front'
+      ? (bounds.maxX - bounds.minX) / 2 + 0.18
+      : (bounds.maxZ - bounds.minZ) / 2 + 0.18;
+    const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
+    const distance = Math.max(
+      verticalHalf / Math.tan(verticalFov / 2),
+      horizontalHalf / Math.tan(horizontalFov / 2),
+      2.4,
+    ) * 1.08;
+    if (this.view === 'front') this.camera.position.set(centerX, centerY, centerZ + distance);
+    else if (this.view === 'angled') this.camera.position.set(centerX + distance * 0.72, centerY, centerZ + distance * 0.72);
+    else this.camera.position.set(centerX + distance, centerY, centerZ);
+    this.camera.lookAt(centerX, centerY, centerZ);
+    if (this.orbit) { this.orbit.target.set(centerX, centerY, centerZ); this.orbit.update(); }
+  }
+
+  _setFrameFromPoses(poses) {
+    const points = poses.flatMap((pose) => Object.values(pose || {}));
+    if (!points.length) return;
+    this._frameBounds = {
+      minX: Math.min(...points.map((p) => p[0])),
+      maxX: Math.max(...points.map((p) => p[0])),
+      minY: Math.min(...points.map((p) => p[1])),
+      maxY: Math.max(...points.map((p) => p[1])),
+      minZ: Math.min(...points.map((p) => p[2])),
+      maxZ: Math.max(...points.map((p) => p[2])),
+    };
+  }
+
+  _setFrameFromAnimation(animation) {
+    const phases = animation?.phases || [];
+    this._setFrameFromPoses(phases.flatMap((phase) => [0, 0.5, 1].map(
+      (progress) => poseForPhase(animation, phase.name, progress))));
   }
 
   setConfig(anim) {
     this.anim = anim || {};
     this.view = (this.anim.view || 'side');
-    const kf = this.anim.keyframes || {};
+    const kf = this.anim.motion?.keyframes || this.anim.keyframes || {};
     this.standT = coerceTargets(kf.stand || {});
     this.bottomT = coerceTargets(kf.bottom || kf.stand || {});
+    this.activePhase = (this.anim.phases || []).find((item) => item?.from !== item?.to)?.name
+      || this.anim.phases?.[0]?.name || 'stand';
+    this._setFrameFromAnimation(this.anim);
     this._applyView();
     this.setDepth(this.depth);
   }
@@ -259,11 +300,44 @@ export class AvatarPlayer {
     this._applyPose(buildIkPose(coerceTargets(targets), this.anim));
   }
 
+  setPoseTransition(fromPose, toPose, progress, previewConfig) {
+    this.pause();
+    const animation = {
+      ...previewConfig,
+      view: previewConfig.view || 'side',
+      motion: { keyframes: { preview_from: fromPose, preview_to: toPose } },
+      phases: [{ name: 'preview', from: 'preview_from', to: 'preview_to' }],
+    };
+    this.anim = animation;
+    this.view = animation.view;
+    this._applyView();
+    this._applyPose(poseForPhase(animation, 'preview', progress));
+  }
+
+  setPreviewConfig(previewConfig) {
+    const poses = Object.values(previewConfig?.poses || {}).map((pose, index) => {
+      const values = pose?.targets || pose || {};
+      const animation = {
+        ...previewConfig,
+        motion: { keyframes: { [`pose_${index}`]: values } },
+        phases: [{ name: 'preview_frame', from: `pose_${index}`, to: `pose_${index}` }],
+      };
+      return poseForPhase(animation, 'preview_frame', 0);
+    });
+    this._setFrameFromPoses(poses);
+    this.view = previewConfig?.view || this.view;
+    this._applyView();
+  }
+
+  setPhase(name, progress = this.depth) {
+    this.activePhase = name;
+    this.setDepth(progress);
+  }
+
   _poseAt(depth) {
     if (!this.anim) return STAND;
-    if (String(this.anim.mode || '').toLowerCase() === 'biomech_fk_ik') return poseAtDepth(this.anim, depth);
-    const targets = lerpTargets(this.standT, this.bottomT, depth);
-    return buildIkPose(targets, this.anim);
+    if (this.activePhase) return poseForPhase(this.anim, this.activePhase, depth);
+    return poseAtDepth(this.anim, depth);
   }
 
   _applyPose(pose) {
@@ -282,15 +356,14 @@ export class AvatarPlayer {
     for (const k of ['l_wrist', 'r_wrist']) this.hands[k].position.copy(V(k));
     for (const k of ['l_ankle', 'r_ankle']) {
       const ankle = V(k); const toe = V(k.replace('ankle', 'toe'));
-      const direction = new THREE.Vector3().subVectors(toe, ankle); direction.y = 0;
+      const direction = new THREE.Vector3().subVectors(toe, ankle);
       if (direction.lengthSq() < 1e-8) direction.set(0, 0, 1);
       direction.normalize();
       const heel = ankle.clone().addScaledVector(direction, -0.06);
       const tip = toe.clone().addScaledVector(direction, 0.02);
-      heel.y = tip.y = 0.035;
       const span = heel.distanceTo(tip);
       this.feet[k].position.copy(heel).add(tip).multiplyScalar(0.5);
-      this.feet[k].quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(direction.x, direction.z));
+      this.feet[k].quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
       this.feet[k].scale.set(1, 1, span / 0.22);
     }
     if (this.editing && this.handleMeshes) this._placeHandles();
@@ -317,12 +390,19 @@ export class AvatarPlayer {
     this._raf = requestAnimationFrame(tick);
   }
   pause() { this.playing = false; if (this._raf) cancelAnimationFrame(this._raf); }
+  setView(view) { this.view = view || 'side'; this._applyView(); this._renderOnce(); }
+  setJointMarkers(visible) {
+    for (const mesh of Object.values(this.joints)) mesh.visible = !!visible;
+    this._renderOnce();
+  }
+  coordinates() { return JSON.parse(JSON.stringify(this.lastPose || {})); }
 
   _renderOnce() { this.renderer.render(this.scene, this.camera); }
   _resize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    this._applyView();
     this.renderer.setSize(w, h, false); this._renderOnce();
   }
   dispose() { this.pause(); this.renderer.dispose(); this.renderer.domElement.remove(); }

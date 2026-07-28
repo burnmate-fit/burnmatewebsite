@@ -78,20 +78,29 @@ export function lerpTargets(a, b, p) {
   for (const k of keys) out[k] = lerp(a[k] || b[k], b[k] || a[k], p);
   return out;
 }
-const toeFromAnkle = (ankle) => [ankle[0], Math.max(0.03, ankle[1]-0.05), ankle[2]+0.16];
+const toeFromAnkle = (ankle, knee, orientation = 'standing') => {
+  if (knee && ['supine', 'prone', 'quadruped'].includes(orientation)) {
+    const direction = sub(ankle, knee);
+    const L = len(direction);
+    if (L > 1e-8) return add(ankle, mul(direction, 0.16 / L));
+  }
+  return [ankle[0], ankle[1] - 0.05, ankle[2] + 0.16];
+};
 
 export function buildIkPose(targets, config) {
   const pose = { ...STAND };
-  const body = config.body && typeof config.body === 'object' ? config.body : {};
+  const body = config.body_profile && typeof config.body_profile === 'object'
+    ? config.body_profile : (config.body && typeof config.body === 'object' ? config.body : {});
   const shoulderW = +(body.shoulder_width ?? 0.36), hipW = +(body.hip_width ?? 0.20);
+  const shoulderRise = +(body.shoulder_rise ?? 0.12);
   const neckOff = vec3(body.neck_offset || [0,0.15,0], [0,0.15,0]);
   const headOff = vec3(body.head_offset || [0,0.30,0], [0,0.30,0]);
   const pelvis = targets.pelvis || pose.pelvis, chest = targets.chest || pose.chest;
   pose.pelvis = pelvis; pose.chest = chest;
   pose.neck = targets.neck || add(chest, neckOff);
   pose.head = targets.head || add(chest, headOff);
-  pose.l_shoulder = targets.l_shoulder || add(chest, [shoulderW/2, 0.12, 0]);
-  pose.r_shoulder = targets.r_shoulder || add(chest, [-shoulderW/2, 0.12, 0]);
+  pose.l_shoulder = targets.l_shoulder || add(chest, [shoulderW/2, shoulderRise, 0]);
+  pose.r_shoulder = targets.r_shoulder || add(chest, [-shoulderW/2, shoulderRise, 0]);
   pose.l_hip = targets.l_hip || add(pelvis, [hipW/2, 0, 0]);
   pose.r_hip = targets.r_hip || add(pelvis, [-hipW/2, 0, 0]);
 
@@ -104,35 +113,132 @@ export function buildIkPose(targets, config) {
     if (!(rootName in pose)) continue;
     const target = targets[tipName] || pose[tipName];
     if (!target) continue;
-    const hint = vec3(ov.hint || def.hint, def.hint);
-    const [mid, tip] = solveTwoBone(pose[rootName], target, +(ov.len_a ?? def.len_a), +(ov.len_b ?? def.len_b), hint, allowStretch);
+    const authoredMid = targets[midName];
+    const authoredHint = authoredMid ? sub(authoredMid, pose[rootName]) : def.hint;
+    const hint = vec3(authoredMid ? authoredHint : (ov.hint || authoredHint), authoredHint);
+    const profileLenA = name.includes('arm')
+      ? (body.upper_arm_length ?? def.len_a) : (body.femur_length ?? def.len_a);
+    const profileLenB = name.includes('arm')
+      ? (body.forearm_length ?? def.len_b) : (body.tibia_length ?? def.len_b);
+    const [mid, tip] = solveTwoBone(
+      pose[rootName], target, +(ov.len_a ?? profileLenA), +(ov.len_b ?? profileLenB),
+      hint, allowStretch);
     pose[midName] = mid; pose[tipName] = tip;
   }
-  for (const [name, value] of Object.entries(targets)) if (!(name in CHAIN_BY_TIP)) pose[name] = value;
-  pose.l_toe = targets.l_toe || toeFromAnkle(pose.l_ankle);
-  pose.r_toe = targets.r_toe || toeFromAnkle(pose.r_ankle);
+  const solvedMids = new Set(['l_elbow', 'r_elbow', 'l_knee', 'r_knee']);
+  for (const [name, value] of Object.entries(targets)) {
+    if (!(name in CHAIN_BY_TIP) && !solvedMids.has(name)) pose[name] = value;
+  }
+  const orientation = config.base_orientation || 'standing';
+  pose.l_toe = targets.l_toe || toeFromAnkle(pose.l_ankle, pose.l_knee, orientation);
+  pose.r_toe = targets.r_toe || toeFromAnkle(pose.r_ankle, pose.r_knee, orientation);
   return pose;
 }
 
-// Convenience: full pose at a given rep depth (0=stand, 1=bottom) for an
-// ik_3d trainer_animation block — mirrors the coach feeding a depth value.
-export function poseAtDepth(anim, depth) {
-  if (String(anim?.mode || '').toLowerCase() === 'biomech_fk_ik') {
+const CONTACT_JOINTS = {
+  left_hand: ['l_wrist'], right_hand: ['r_wrist'],
+  left_knee: ['l_knee'], right_knee: ['r_knee'],
+  pelvis: ['pelvis'], upper_back: ['chest'],
+  left_foot: ['l_ankle', 'l_toe'], right_foot: ['r_ankle', 'r_toe'],
+};
+function applyContactTargets(targets, anim, phase) {
+  if (!Array.isArray(anim?.contacts)) return targets;
+  const out = { ...targets };
+  for (const contact of anim.contacts) {
+    if (!contact || !['planted', 'supported'].includes(contact.mode)) continue;
+    if (Array.isArray(contact.phases) && !contact.phases.includes(phase)) continue;
+    const names = CONTACT_JOINTS[contact.joint] || [];
+    const anchor = contact.anchor;
+    if (names.length === 1 && Array.isArray(anchor)) out[names[0]] = vec3(anchor, out[names[0]]);
+    else if (anchor && typeof anchor === 'object') {
+      for (const name of names) {
+        const short = name.endsWith('ankle') ? 'ankle' : name.endsWith('toe') ? 'toe' : name;
+        if (anchor[short] || anchor[name]) out[name] = vec3(anchor[short] || anchor[name], out[name]);
+      }
+    }
+  }
+  return out;
+}
+function enforcePoseContacts(pose, anim, phase) {
+  if (!Array.isArray(anim?.contacts)) return pose;
+  const out = { ...pose };
+  for (const contact of anim.contacts) {
+    if (!contact || !['planted', 'supported'].includes(contact.mode)) continue;
+    if (Array.isArray(contact.phases) && !contact.phases.includes(phase)) continue;
+    const names = CONTACT_JOINTS[contact.joint] || [];
+    const anchor = contact.anchor;
+    if (names.length === 1 && Array.isArray(anchor)) out[names[0]] = vec3(anchor, out[names[0]]);
+    else if (anchor && typeof anchor === 'object') {
+      for (const name of names) {
+        const short = name.endsWith('ankle') ? 'ankle' : name.endsWith('toe') ? 'toe' : name;
+        if (anchor[short] || anchor[name]) out[name] = vec3(anchor[short] || anchor[name], out[name]);
+      }
+    }
+  }
+  return out;
+}
+function phaseEndpoints(anim, phase, progress) {
+  const keyframes = anim.motion?.keyframes || anim.keyframes || {};
+  const names = Object.keys(keyframes);
+  if (!names.length) return [{}, {}, 0];
+  const phases = Array.isArray(anim.phases) ? anim.phases : [];
+  const spec = phases.find((item) => item?.name === phase) || {};
+  const fromName = spec.from || (keyframes[phase] ? phase : names[0]);
+  const toName = spec.to || fromName;
+  const t = Number(progress);
+  const a = applyContactTargets(coerceTargets(keyframes[fromName] || keyframes[names[0]]), anim, phase);
+  const b = applyContactTargets(coerceTargets(keyframes[toName] || keyframes[fromName]), anim, phase);
+  return [a, b, Math.max(0, Math.min(1, t))];
+}
+function interpolateTargetsForConfig(a, b, t, anim) {
+  const out = lerpTargets(a, b, t);
+  const interpolation = anim?.interpolation;
+  if (interpolation?.type !== 'pivoted_direction' || !interpolation.joints) return out;
+  for (const [joint, pivot] of Object.entries(interpolation.joints)) {
+    if (!a[joint] || !b[joint] || !a[pivot] || !b[pivot]) continue;
+    const va = sub(a[joint], a[pivot]); const vb = sub(b[joint], b[pivot]);
+    const la = len(va); const lb = len(vb);
+    if (la <= 1e-8 || lb <= 1e-8) continue;
+    const direction = lerp(mul(va, 1 / la), mul(vb, 1 / lb), t);
+    const directionLength = len(direction);
+    if (directionLength <= 1e-8) continue;
+    const radius = la * (1 - t) + lb * t;
+    out[joint] = add(out[pivot], mul(direction, radius / directionLength));
+  }
+  return out;
+}
+
+export function poseForPhase(anim, phase, progress) {
+  const model = String(anim?.motion_model || '').toLowerCase()
+    || (String(anim?.mode || '').toLowerCase() === 'biomech_fk_ik' ? 'joint_space_fk_ik' : 'target_space_ik');
+  if (model === 'joint_space_fk_ik') {
     const keyframes = anim.motion?.keyframes || {};
-    const stand = keyframes.stand || {};
-    const bottom = keyframes.bottom || stand;
+    const phases = Array.isArray(anim.phases) ? anim.phases : [];
+    const spec = phases.find((item) => item?.name === phase) || {};
+    const names = Object.keys(keyframes);
+    const fromName = spec.from || names[0];
+    const toName = spec.to || fromName;
+    const t = Number(progress);
+    const stand = keyframes[fromName] || keyframes[names[0]] || {};
+    const bottom = keyframes[toName] || stand;
     const params = {};
     for (const key of new Set([...Object.keys(stand), ...Object.keys(bottom)])) {
       const a = Number(stand[key] ?? bottom[key] ?? 0);
       const b = Number(bottom[key] ?? stand[key] ?? a);
-      if (Number.isFinite(a) && Number.isFinite(b)) params[key] = a * (1 - depth) + b * depth;
+      if (Number.isFinite(a) && Number.isFinite(b)) params[key] = a * (1 - t) + b * t;
     }
     return buildBiomechFkPose(params, anim);
   }
-  const kf = anim.keyframes || {};
-  const a = coerceTargets(kf.stand || {});
-  const b = coerceTargets(kf.bottom || kf.stand || {});
-  return buildIkPose(lerpTargets(a, b, depth), anim);
+  const [a, b, t] = phaseEndpoints(anim, phase, progress);
+  return enforcePoseContacts(
+    buildIkPose(interpolateTargetsForConfig(a, b, t, anim), anim), anim, phase);
+}
+
+// Convenience for the simple depth scrubber: use the first moving phase.
+export function poseAtDepth(anim, depth) {
+  const phase = (anim?.phases || []).find((item) => item?.from !== item?.to)?.name
+    || (anim?.phases || [])[0]?.name || 'stand';
+  return poseForPhase(anim, phase, depth);
 }
 
 // ── joint-space FK/contact solver (CM5 rig.py parity) ─────────────────────
@@ -150,7 +256,7 @@ const upSegment = (length, pitch) => [0, length * Math.cos(pitch), length * Math
 
 export function buildBiomechFkPose(params = {}, config = {}) {
   const body = config.body_profile || {};
-  const contacts = config.contacts || {};
+  const contacts = config.contact_solver || (Array.isArray(config.contacts) ? {} : config.contacts) || {};
   const value = (name, fallback) => finiteNumber(body[name], fallback);
   const shoulderW = value('shoulder_width', 0.36);
   const hipW = value('hip_width', 0.20);

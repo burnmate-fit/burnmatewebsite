@@ -184,7 +184,7 @@ async function segAssets(host, slug, exercises) {
 // 2. PREVIEW — intro/preview config: steps (pose + text + voice), no tracking
 async function segPreview(host, slug) {
   let cfg = null;
-  try { cfg = (await api.introConfig(slug)).config; } catch { cfg = null; }
+  try { cfg = (await api.previewConfig(slug)).config; } catch { cfg = null; }
   const status = statusLine();
   const btn = saveBtn('Save preview JSON');
 
@@ -210,8 +210,8 @@ async function segPreview(host, slug) {
   const ta = jsonArea(cfg);
   btn.onclick = () => verifiedSave({
     btn, status,
-    save: () => api.saveIntroConfig(slug, parseArea(ta, 'Preview')),
-    refetch: () => api.introConfig(slug),
+    save: () => api.savePreviewConfig(slug, parseArea(ta, 'Preview')),
+    refetch: () => api.previewConfig(slug),
     verify: (f) => JSON.stringify(f.config) === JSON.stringify(parseArea(ta, 'Preview')),
   });
 

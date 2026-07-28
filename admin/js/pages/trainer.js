@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, API_BASE } from '../api.js';
 import { el, header, card, spinner, errorBox, pill } from '../ui.js';
 import { icon } from '../icons.js';
 import { AvatarPlayer } from '../avatar.js';
@@ -38,12 +38,24 @@ export async function renderTrainer(view) {
 
   const liveStage = el('div', { class: 'rounded-xl border border-line bg-ink overflow-hidden min-w-0 relative', style: 'height:420px' });
   const introStage = el('div', { class: 'rounded-xl border border-line bg-ink overflow-hidden min-w-0 relative', style: 'height:360px' });
+  const liveWrap = el('div', { class: 'space-y-2' },
+    el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide' }, 'Trainer Test'), liveStage);
   const introWrap = el('div', { class: 'space-y-2' },
-    el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide' }, 'Pre-exercise intro — independent front-view player'), introStage);
+    el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide' }, 'Exercise Preview'), introStage);
+  const previewModeButtons = el('div', { class: 'flex gap-2' });
+  const showMode = (mode) => {
+    liveWrap.hidden = mode !== 'trainer';
+    introWrap.hidden = mode !== 'preview';
+    previewModeButtons.querySelectorAll('button').forEach(
+      (button) => button.classList.toggle('border-accent', button.dataset.mode === mode));
+  };
+  previewModeButtons.append(
+    el('button', { 'data-mode': 'trainer', class: 'text-sm border border-accent rounded-lg px-3 py-2', onclick: () => showMode('trainer') }, 'Trainer Test'),
+    el('button', { 'data-mode': 'preview', class: 'text-sm border border-line rounded-lg px-3 py-2', onclick: () => showMode('preview') }, 'Exercise Preview'),
+  );
   const previewColumn = el('div', { class: 'space-y-5 min-w-0' },
-    el('div', { class: 'space-y-2' },
-      el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide' }, 'Live trainer — independent side-view player'), liveStage),
-    introWrap);
+    previewModeButtons, liveWrap, introWrap);
+  showMode('trainer');
   const panel = el('div', { class: 'min-w-0' });
   const select = el('select', { class: 'bg-ink border border-line rounded-lg px-3 py-2 text-sm focus:border-accent outline-none' },
     el('option', { value: '' }, '— pick an exercise —'),
@@ -88,10 +100,6 @@ function hybridInfoCard() {
       el('pre', { class: 'mt-2 overflow-auto rounded bg-black p-3 text-[11px] text-accent' }, JSON.stringify(HYBRID_TEMPLATE, null, 2))),
   );
 }
-const localJson = async (path) => {
-  try { const response = await fetch(path); return response.ok ? response.json() : null; } catch { return null; }
-};
-
 async function loadJsonSources(slug) {
   let raw = null;
   try { raw = (await api.trainerRawConfig(slug)).config; }
@@ -99,23 +107,12 @@ async function loadJsonSources(slug) {
     const legacy = await api.trainerConfig(slug);
     raw = trainerRawFromAnimation(slug, legacy.trainer_animation);
   }
-  const localTrainer = await localJson(`data/trainer_configs/${encodeURIComponent(slug)}_ik.json`);
   let trainerSource = 'backend';
-  // The code-owned Squat v2 file bootstraps the first rollout. Once the
-  // backend contains a v2 config, the real endpoint is authoritative so a
-  // JSON save is immediately visible after refresh.
-  if (localTrainer?.trainer_animation && String(trainerAnimationOf(raw).mode || '').toLowerCase() !== 'biomech_fk_ik') {
-    raw = cloneJson(raw);
-    raw.shadow_coach = raw.shadow_coach || { enabled: true, shadow_render_style: 'procedural_3d' };
-    raw.shadow_coach.trainer_animation = localTrainer.trainer_animation;
-    trainerSource = 'local v2 template';
-  }
   let intro = null;
   let introSource = 'backend';
-  try { intro = (await api.introConfig(slug)).config; }
+  try { intro = (await api.previewConfig(slug)).config; }
   catch {
-    intro = await localJson(`data/intro_configs/${encodeURIComponent(slug)}_intro.json`);
-    introSource = intro ? 'local template' : 'not configured';
+    introSource = 'not configured';
   }
   return { raw, intro, trainerSource, introSource };
 }
@@ -132,23 +129,91 @@ async function previewMode(panel, slug, exercises, liveStage, introStage, introW
   const { raw, intro, trainerSource, introSource } = sources;
   const animation = trainerAnimationOf(raw);
   player.setConfig(animation);
-  introWrap.hidden = !intro;
 
   const depth = el('input', { type: 'range', min: '0', max: '100', value: '0', class: 'flex-1 accent-accent' });
+  const speed = el('select', { class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs' },
+    ...[['0.5', '0.5×'], ['1', '1×'], ['1.5', '1.5×'], ['2', '2×']].map(
+      ([value, label]) => el('option', { value }, label)));
+  speed.value = '1';
+  const viewSelect = el('select', { class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs' },
+    ...['side', 'front', 'angled'].map((value) => el('option', { value }, `${value} view`)));
+  viewSelect.value = animation.view || 'side';
+  viewSelect.onchange = () => player.setView(viewSelect.value);
+  const markerToggle = el('input', { type: 'checkbox', checked: true, class: 'accent-accent' });
+  markerToggle.onchange = () => player.setJointMarkers(markerToggle.checked);
+  const coordinates = el('pre', { class: 'max-h-44 overflow-auto rounded bg-black p-2 text-[10px] text-neutral-400 mt-2' });
+  const phaseLabel = el('div', { class: 'text-xs text-accent font-semibold' });
+  const guidanceText = el('div', { class: 'text-xs text-neutral-300 mt-2' });
+  const guidanceVoice = el('button', { class: 'text-xs border border-line rounded px-2 py-1 mt-2' }, 'Play trainer voice');
+  let currentGuidanceVoice = '';
+  guidanceVoice.onclick = () => {
+    if (currentGuidanceVoice) new Audio(`${API_BASE}/media/exercises/${slug}/${currentGuidanceVoice}`).play().catch(() => {});
+  };
+  const phaseBar = el('div', { class: 'flex flex-wrap gap-1.5 mt-2' });
+  const phases = animation.phases || [];
+  const variants = animation.variants || [];
+  const variantSelect = variants.length ? el('select', {
+    class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs',
+    title: 'Left/right exercise variant',
+  }, ...variants.map((value) => el('option', { value }, value.replaceAll('_', ' ')))) : null;
+  const phaseMatchesVariant = (phase, variant) => !phase.variant || phase.variant === variant;
+  const updateVisiblePhases = () => {
+    phaseBar.querySelectorAll('button').forEach((button) => {
+      const phase = phases.find((item) => item.name === button.dataset.phase);
+      button.hidden = Boolean(variantSelect && !phaseMatchesVariant(phase || {}, variantSelect.value));
+    });
+  };
+  const setPhase = (name) => {
+    player.setPhase(name, 0);
+    phaseLabel.textContent = `Current phase: ${name}`;
+    const guidance = raw?.shadow_coach?.guidance?.[name] || {};
+    guidanceText.textContent = guidance.text || 'No guidance text configured for this phase.';
+    currentGuidanceVoice = guidance.voice || '';
+    guidanceVoice.disabled = !currentGuidanceVoice;
+    phaseBar.querySelectorAll('button').forEach(
+      (button) => button.classList.toggle('border-accent', button.dataset.phase === name));
+  };
+  for (const phase of phases) {
+    phaseBar.append(el('button', {
+      'data-phase': phase.name,
+      class: 'text-xs border border-line rounded px-2 py-1',
+      onclick: () => setPhase(phase.name),
+    }, phase.name));
+  }
+  if (variantSelect) {
+    variantSelect.onchange = () => {
+      updateVisiblePhases();
+      const next = phases.find((item) => item.from !== item.to && phaseMatchesVariant(item, variantSelect.value))
+        || phases.find((item) => phaseMatchesVariant(item, variantSelect.value));
+      if (next) setPhase(next.name);
+    };
+    updateVisiblePhases();
+  }
+  const firstPhase = phases.find((item) => item.from !== item.to && phaseMatchesVariant(item, variantSelect?.value))
+    ?.name || phases[0]?.name || 'stand';
+  setPhase(firstPhase);
   const playBtn = el('button', { class: 'inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' });
   const setPlay = (p) => playBtn.replaceChildren(icon(p ? 'pause' : 'play', 'w-4 h-4'), p ? 'Pause' : 'Play');
   setPlay(false);
   const editBtn = el('button', { class: 'inline-flex items-center gap-1.5 text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, icon('edit', 'w-4 h-4'), 'Edit JSON');
   const testBtn = el('button', { class: 'inline-flex items-center gap-1.5 text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, icon('person', 'w-4 h-4'), 'Test with webcam');
 
-  playBtn.onclick = () => { if (player.playing) { player.pause(); setPlay(false); } else { player.play(); setPlay(true); } };
-  player.onDepth = (d) => { depth.value = Math.round(d * 100); };
+  playBtn.onclick = () => {
+    if (player.playing) { player.pause(); setPlay(false); }
+    else { player.play(2.4 / Number(speed.value || 1)); setPlay(true); }
+  };
+  player.onDepth = (d) => {
+    depth.value = Math.round(d * 100);
+    coordinates.textContent = JSON.stringify(player.coordinates(), null, 1);
+  };
   depth.oninput = () => { player.pause(); setPlay(false); player.setDepth(depth.value / 100); };
   editBtn.onclick = () => jsonMode(panel, { slug, raw, intro, trainerSource, introSource }, exercises, liveStage, introStage, introWrap);
   testBtn.onclick = () => startWebcamTest(liveStage, slug, testBtn);
 
-  const introCard = intro ? makeIntroPreviewCard(intro, introStage) : null;
+  const introCard = intro ? makeIntroPreviewCard(intro, introStage, slug) : null;
   const keyframes = animation.motion?.keyframes || animation.keyframes || {};
+  const contacts = Array.isArray(animation.contacts) ? animation.contacts : [];
+  const unsupported = contacts.filter((contact) => !contact.anchor && contact.mode !== 'supported');
 
   panel.replaceChildren(
     hybridInfoCard(),
@@ -156,7 +221,23 @@ async function previewMode(panel, slug, exercises, liveStage, introStage, introW
       el('div', { class: 'flex items-center gap-2 mb-3 flex-wrap' }, pill(`${slug}_ik.json`), pill(animation.mode || 'unknown', 'accent'), pill(trainerSource)),
       el('div', { class: 'flex items-center gap-3' }, playBtn,
         el('div', { class: 'flex items-center gap-2 flex-1' }, el('span', { class: 'text-xs text-neutral-500' }, 'depth'), depth)),
+      el('div', { class: 'flex flex-wrap items-center gap-3 mt-3 text-xs text-neutral-400' },
+        speed, viewSelect, ...(variantSelect ? [variantSelect] : []),
+        el('label', { class: 'flex items-center gap-1' }, markerToggle, 'joint markers')),
+      phaseLabel,
+      guidanceText,
+      guidanceVoice,
+      phaseBar,
       el('div', { class: 'flex gap-2 mt-3' }, editBtn, testBtn),
+      el('details', { class: 'mt-3 text-xs text-neutral-500' },
+        el('summary', {}, 'Current pose coordinates'), coordinates),
+    ),
+    card(
+      el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Contacts and diagnostics'),
+      el('div', { class: 'flex flex-wrap gap-2' },
+        ...(contacts.length ? contacts.map((contact) => pill(`${contact.joint}: ${contact.mode}`)) : [pill('no explicit contacts', 'danger')])),
+      unsupported.length ? el('div', { class: 'text-xs text-danger mt-2' }, `${unsupported.length} contact(s) have no enforceable anchor.`)
+        : el('div', { class: 'text-xs text-neutral-500 mt-2' }, 'Declared contact anchors are solved before rendering. Bone-length parity is covered by shared fixture tests.'),
     ),
     ...(introCard ? [introCard, card(el('div', { class: 'text-xs text-neutral-500' }, `Intro source: ${introSource}`))] : []),
     card(el('div', { class: 'text-xs text-neutral-500 leading-relaxed' },
@@ -165,7 +246,7 @@ async function previewMode(panel, slug, exercises, liveStage, introStage, introW
   );
 }
 
-function makeIntroPreviewCard(intro, stage) {
+function makeIntroPreviewCard(intro, stage, slug) {
   stage.querySelector('[data-intro-overlay]')?.remove();
   const overlay = el('div', { 'data-intro-overlay': 'true', class: 'absolute inset-x-0 bottom-0 z-10 text-center px-8 py-7 pointer-events-none',
     style: 'background:linear-gradient(transparent,rgba(13,15,12,.96))' });
@@ -176,15 +257,43 @@ function makeIntroPreviewCard(intro, stage) {
   overlay.append(title, subtitle);
   stage.append(overlay);
   const status = el('div', { class: 'text-xs text-neutral-500 mt-2' });
+  const scrubber = el('input', { type: 'range', min: '0', max: '1000', value: '0', class: 'w-full accent-accent mt-3' });
+  const speed = el('select', { class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs' },
+    ...[['0.5', '0.5×'], ['1', '1×'], ['1.5', '1.5×'], ['2', '2×']].map(
+      ([value, label]) => el('option', { value }, label)));
+  speed.value = '1';
+  const viewSelect = el('select', { class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs' },
+    ...['side', 'front', 'angled'].map((value) => el('option', { value }, `${value} view`)));
+  viewSelect.value = intro.view || intro.presentation?.view || 'side';
+  const markerToggle = el('input', { type: 'checkbox', checked: true, class: 'accent-accent' });
+  const coordinates = el('pre', { class: 'max-h-36 overflow-auto rounded bg-black p-2 text-[10px] text-neutral-400 mt-2' });
   const stepBar = el('div', { class: 'flex flex-wrap gap-2 mt-3' });
+  const variants = intro.variants || [];
+  const variantSelect = variants.length ? el('select', {
+    class: 'bg-ink border border-line rounded-lg px-2 py-1 text-xs',
+    title: 'Left/right exercise variant',
+  }, ...variants.map((value) => el('option', { value }, value.replaceAll('_', ' ')))) : null;
+  const voice = el('button', { class: 'text-sm border border-line rounded-lg px-3 py-2' }, 'Play preview voice');
+  let currentVoice = '';
+  voice.onclick = () => {
+    if (currentVoice) new Audio(`${API_BASE}/media/exercises/${slug}/${currentVoice}`).play().catch(() => {});
+  };
   const preview = new IntroPreview(introPlayer, ({ step, phase, fade, elapsed, total, view }) => {
     title.textContent = step.title || '';
     subtitle.textContent = oneLine ? '' : (step.subtitle || '');
     overlay.style.opacity = String(fade);
     status.textContent = `${phase} · ${elapsed.toFixed(1)} / ${total.toFixed(1)} s · ${view} view`;
+    scrubber.value = total > 0 ? String(Math.round((elapsed / total) * 1000)) : '0';
+    coordinates.textContent = JSON.stringify(introPlayer.coordinates(), null, 1);
+    currentVoice = step.voice || step.audio_cue || '';
+    voice.disabled = !currentVoice;
     stepBar.querySelectorAll('button').forEach((button, index) => button.classList.toggle('border-accent', index === (intro.timeline || []).indexOf(step)));
   });
   introPreview = preview;
+  scrubber.oninput = () => { preview.seek(Number(scrubber.value) / 1000); setPlay(false); };
+  speed.onchange = () => preview.setPlaybackRate(speed.value);
+  viewSelect.onchange = () => preview.setView(viewSelect.value);
+  markerToggle.onchange = () => introPlayer.setJointMarkers(markerToggle.checked);
 
   const play = el('button', { class: 'inline-flex items-center gap-1.5 bg-accent text-ink font-semibold text-sm px-3 py-2 rounded-lg' });
   const setPlay = (playing) => play.replaceChildren(icon(playing ? 'pause' : 'play', 'w-4 h-4'), playing ? 'Pause intro' : 'Play intro');
@@ -193,15 +302,39 @@ function makeIntroPreviewCard(intro, stage) {
   const replay = el('button', { class: 'text-sm border border-line rounded-lg px-3 py-2 hover:border-accent' }, 'Replay');
   replay.onclick = () => { preview.replay(); setPlay(true); };
   (intro.timeline || []).forEach((step, index) => stepBar.append(el('button', {
+    'data-variant': step.variant || '',
     class: 'text-xs border border-line rounded-md px-2 py-1 text-neutral-300 hover:border-accent',
-    onclick: () => { preview.pause(); setPlay(false); preview.showStep(index); },
+    onclick: () => {
+      preview.pause();
+      setPlay(false);
+      preview.showStep(preview.timeline().indexOf(step));
+    },
   }, `${index + 1}. ${step.title}`)));
   preview.setConfig(intro);
+  preview.setPlaybackRate(speed.value);
+  preview.setView(viewSelect.value);
+  if (variantSelect) {
+    const updateVariant = () => {
+      preview.setVariant(variantSelect.value);
+      setPlay(false);
+      stepBar.querySelectorAll('button').forEach((button) => {
+        button.hidden = Boolean(button.dataset.variant && button.dataset.variant !== variantSelect.value);
+      });
+    };
+    variantSelect.onchange = updateVariant;
+    updateVariant();
+  }
   return card(
     el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Pre-exercise intro — separate player'),
-    el('div', { class: 'flex gap-2 items-center' }, play, replay, pill(`${preview.totalDuration().toFixed(1)} s`, 'accent')),
+    el('div', { class: 'flex gap-2 items-center flex-wrap' }, play, replay, voice,
+      ...(variantSelect ? [variantSelect] : []), pill(`${preview.totalDuration().toFixed(1)} s`, 'accent')),
+    scrubber,
+    el('div', { class: 'flex flex-wrap items-center gap-3 mt-2 text-xs text-neutral-400' },
+      speed, viewSelect, el('label', { class: 'flex items-center gap-1' }, markerToggle, 'joint markers')),
     status,
     stepBar,
+    el('details', { class: 'mt-3 text-xs text-neutral-500' },
+      el('summary', {}, 'Current preview pose coordinates'), coordinates),
   );
 }
 
@@ -231,10 +364,11 @@ function jsonMode(panel, context, exercises, liveStage, introStage, introWrap) {
   };
   const applyIntro = () => {
     intro = parse(introCode, 'Intro');
-    if (!Array.isArray(intro.timeline) || !intro.trainer_animation?.poses) throw new Error('Intro JSON needs timeline and trainer_animation.poses.');
+    const poses = intro.schema_version === 3 ? intro.poses : intro.trainer_animation?.poses;
+    if (!Array.isArray(intro.timeline) || !poses) throw new Error('Preview JSON needs timeline and poses.');
     introWrap.hidden = false;
     introPreview?.dispose();
-    makeIntroPreviewCard(intro, introStage);
+    makeIntroPreviewCard(intro, introStage, slug);
     return intro;
   };
   try { applyTrainer(); if (intro) applyIntro(); } catch (error) { say(error.message, 'danger'); }
@@ -250,7 +384,7 @@ function jsonMode(panel, context, exercises, liveStage, introStage, introWrap) {
   applyIntroBtn.onclick = () => { try { applyIntro(); say('Intro preview updated from JSON.', 'accent'); } catch (error) { say(error.message, 'danger'); } };
   const saveIntroBtn = el('button', { class: 'text-sm border border-accent text-accent rounded-lg px-3 py-2' }, 'Save intro JSON');
   saveIntroBtn.onclick = async () => {
-    try { const config = applyIntro(); saveIntroBtn.disabled = true; await api.saveIntroConfig(slug, config); say('Intro JSON saved to the backend endpoint.', 'accent'); }
+    try { const config = applyIntro(); saveIntroBtn.disabled = true; await api.savePreviewConfig(slug, config); say('Preview JSON saved to its dedicated backend endpoint.', 'accent'); }
     catch (error) { say(error.message || 'Intro save failed.', 'danger'); }
     finally { saveIntroBtn.disabled = false; }
   };
