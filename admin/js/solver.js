@@ -272,7 +272,9 @@ export function buildBiomechFkPose(params = {}, config = {}) {
   const forearm = value('forearm_length', 0.265);
   const footLength = value('foot_length', 0.16);
   const heelBack = value('heel_back', 0.08);
-  const stance = finiteNumber(contacts.stance_width, 0.24);
+  // Animatable: a keyframe may override the config-level contact stance so a
+  // preview can step the feet apart. Must mirror CM5 rig.py or parity breaks.
+  const stance = finiteNumber(params.stance_width, finiteNumber(contacts.stance_width, 0.24));
   const groundY = finiteNumber(contacts.ground_y, 0.03);
   const ankleHeight = finiteNumber(contacts.ankle_height, 0.08);
   const footForward = finiteNumber(contacts.foot_forward, footLength);
