@@ -20,7 +20,9 @@ export function solveTwoBone(root, target, lenA, lenB, bendHint, allowStretch = 
   const dir = norm(r2t);
   const maxReach = lenA + lenB, minReach = Math.abs(lenA - lenB) + 1e-4;
   let solveDist = dist, tip = target;
-  if (!allowStretch) { solveDist = Math.max(minReach, Math.min(dist, maxReach - 1e-4)); tip = add(root, mul(dir, solveDist)); }
+  // Full extension is a valid solution (h === 0). Match CM5 exactly so
+  // intentionally straight limbs do not retain a synthetic knee/elbow bend.
+  if (!allowStretch) { solveDist = Math.max(minReach, Math.min(dist, maxReach)); tip = add(root, mul(dir, solveDist)); }
   const x = (lenA*lenA + solveDist*solveDist - lenB*lenB) / (2*solveDist);
   const h = Math.sqrt(Math.max(0, lenA*lenA - x*x));
   let hint = norm(bendHint);
@@ -281,6 +283,9 @@ export function buildBiomechFkPose(params = {}, config = {}) {
   const torsoPitch = radians('torso_pitch_deg');
   const upperArmPitch = radians('upper_arm_pitch_deg');
   const forearmPitch = radians('forearm_pitch_deg');
+  const upperArmAbduction = radians('upper_arm_abduction_deg');
+  const forearmAbduction = Number.isFinite(Number(params.forearm_abduction_deg))
+    ? radians('forearm_abduction_deg') : upperArmAbduction;
   const kneeRatio = Math.max(0, Math.min(1, finiteNumber(params.knee_lateral_ratio, 0.5)));
   const ankleX = stance / 2;
   const hipX = hipW / 2;
@@ -300,8 +305,10 @@ export function buildBiomechFkPose(params = {}, config = {}) {
     const knee = add(hip, [sign * upper[0], upper[1], upper[2]]);
     const ankle = [sign * ankleX, ankleHeight, footZ];
     const shoulder = [sign * shoulderW / 2, shoulderCenter[1], shoulderCenter[2]];
-    const elbow = add(shoulder, downSegment(upperArm, upperArmPitch));
-    const wrist = add(elbow, downSegment(forearm, forearmPitch));
+    const elbow = add(shoulder, downSegment(
+      upperArm, upperArmPitch, sign * upperArm * Math.sin(upperArmAbduction)));
+    const wrist = add(elbow, downSegment(
+      forearm, forearmPitch, sign * forearm * Math.sin(forearmAbduction)));
     Object.assign(pose, {
       [`${side}_hip`]: hip, [`${side}_knee`]: knee, [`${side}_ankle`]: ankle,
       [`${side}_toe`]: [ankle[0], groundY, ankle[2] + footForward],

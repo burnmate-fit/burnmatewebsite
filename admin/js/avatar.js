@@ -262,7 +262,15 @@ export class AvatarPlayer {
     ) * 1.08;
     if (this.view === 'front') this.camera.position.set(centerX, centerY, centerZ + distance);
     else if (this.view === 'angled') this.camera.position.set(centerX + distance * 0.72, centerY, centerZ + distance * 0.72);
-    else this.camera.position.set(centerX + distance, centerY, centerZ);
+    else {
+      const yaw = THREE.MathUtils.degToRad(Number(
+        this.anim?.render?.side_camera_yaw_deg || 0));
+      this.camera.position.set(
+        centerX + distance * Math.cos(yaw),
+        centerY,
+        centerZ + distance * Math.sin(yaw),
+      );
+    }
     this.camera.lookAt(centerX, centerY, centerZ);
     if (this.orbit) { this.orbit.target.set(centerX, centerY, centerZ); this.orbit.update(); }
   }

@@ -376,7 +376,16 @@ function jsonMode(panel, context, exercises, liveStage, introStage, introWrap) {
   applyTrainerBtn.onclick = () => { try { applyTrainer(); say('Trainer preview updated from JSON.', 'accent'); } catch (error) { say(error.message, 'danger'); } };
   const saveTrainerBtn = el('button', { class: 'text-sm border border-accent text-accent rounded-lg px-3 py-2' }, 'Save trainer JSON');
   saveTrainerBtn.onclick = async () => {
-    try { const config = applyTrainer(); saveTrainerBtn.disabled = true; await api.saveTrainerRawConfig(slug, config); say('Trainer JSON saved to the backend endpoint. Tracker JSON was not changed.', 'accent'); }
+    try {
+      const config = applyTrainer();
+      saveTrainerBtn.disabled = true;
+      await api.saveTrainerRawConfig(slug, config);
+      const fetched = (await api.trainerRawConfig(slug)).config;
+      if (JSON.stringify(fetched) !== JSON.stringify(config)) {
+        throw new Error('Trainer save read-back did not match the edited JSON.');
+      }
+      say('Trainer JSON saved and exact backend read-back verified. Tracker JSON was not changed.', 'accent');
+    }
     catch (error) { say(error.message || 'Trainer save failed.', 'danger'); }
     finally { saveTrainerBtn.disabled = false; }
   };
@@ -384,7 +393,16 @@ function jsonMode(panel, context, exercises, liveStage, introStage, introWrap) {
   applyIntroBtn.onclick = () => { try { applyIntro(); say('Intro preview updated from JSON.', 'accent'); } catch (error) { say(error.message, 'danger'); } };
   const saveIntroBtn = el('button', { class: 'text-sm border border-accent text-accent rounded-lg px-3 py-2' }, 'Save intro JSON');
   saveIntroBtn.onclick = async () => {
-    try { const config = applyIntro(); saveIntroBtn.disabled = true; await api.savePreviewConfig(slug, config); say('Preview JSON saved to its dedicated backend endpoint.', 'accent'); }
+    try {
+      const config = applyIntro();
+      saveIntroBtn.disabled = true;
+      await api.savePreviewConfig(slug, config);
+      const fetched = (await api.previewConfig(slug)).config;
+      if (JSON.stringify(fetched) !== JSON.stringify(config)) {
+        throw new Error('Preview save read-back did not match the edited JSON.');
+      }
+      say('Preview JSON saved and exact backend read-back verified.', 'accent');
+    }
     catch (error) { say(error.message || 'Intro save failed.', 'danger'); }
     finally { saveIntroBtn.disabled = false; }
   };
@@ -409,9 +427,21 @@ async function startWebcamTest(stage, slug, testBtn) {
   const overlay = el('div', { class: 'absolute inset-0 bg-ink z-10' });
   const stopBtn = el('button', { class: 'absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 bg-danger text-white font-semibold text-sm px-3 py-2 rounded-lg' }, 'Stop test');
   host.append(overlay, stopBtn);
+  let tracker;
+  try {
+    tracker = await api.trackerConfig(slug);
+  } catch (error) {
+    overlay.replaceChildren(errorBox(
+      `Tracking test unavailable: ${error.message || 'backend tracker JSON could not be loaded.'}`,
+    ));
+    stopBtn.onclick = () => {
+      overlay.remove();
+      stopBtn.remove();
+      testBtn.disabled = false;
+    };
+    return;
+  }
   const tester = new PoseTester(overlay);
-  let tracker = null;
-  try { tracker = await api.trackerConfig(slug); } catch { /* no rep config yet → tester uses defaults */ }
   stopBtn.onclick = () => { tester.stop(); overlay.remove(); stopBtn.remove(); testBtn.disabled = false; };
   tester.start(tracker);
 }

@@ -189,11 +189,31 @@ async function segPreview(host, slug) {
   const btn = saveBtn('Save preview JSON');
 
   if (!cfg) {
+    const template = {
+      schema_version: 3,
+      preview_config_id: `${slug}_preview`,
+      enabled: true,
+      view: 'side',
+      base_orientation: 'standing',
+      motion_model: 'target_space_ik',
+      poses: {},
+      contacts: [],
+      timeline: [],
+    };
+    const ta = jsonArea(template);
+    btn.onclick = () => verifiedSave({
+      btn, status,
+      save: () => api.savePreviewConfig(slug, parseArea(ta, 'Preview')),
+      refetch: () => api.previewConfig(slug),
+      verify: (f) => JSON.stringify(f.config) === JSON.stringify(parseArea(ta, 'Preview')),
+    });
     host.replaceChildren(card(
       el('div', { class: 'text-sm text-neutral-300 mb-2' }, 'No preview config for this exercise yet.'),
       el('div', { class: 'text-xs text-neutral-500' },
         'Preview drives the "watch the steps" screen: each step has a pose, on-screen text and a voice clip. Add one via the Trainer Designer or paste JSON below.'),
-      jsonAreaBlock(),
+      ta,
+      el('div', { class: 'mt-3' }, btn),
+      status,
     ));
     return;
   }
@@ -224,8 +244,6 @@ async function segPreview(host, slug) {
     card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-3' }, `Steps (${steps.length}) — text + voice`), previewSummary, ...stepCards),
     card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Preview JSON'), ta, el('div', { class: 'mt-3' }, btn), status),
   );
-
-  function jsonAreaBlock() { return el('div', {}); }
 }
 
 // 3. TRAINER — guide/copy: IK body + motion (+ guidance text/voice)
