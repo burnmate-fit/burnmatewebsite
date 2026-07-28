@@ -10,6 +10,11 @@ import {
   buildIkPose, poseAtDepth, poseForPhase,
 } from './solver.js';
 
+// Keep the browser avatar visually aligned with the CM5 GL shader:
+// glr.py base=(0.30, 0.46, 0.60), rim=(0.45, 0.95, 1.0).
+const CM5_AVATAR_BASE = 0x4d7599;
+const CM5_AVATAR_RIM = 0x73f2ff;
+
 // editor carry-along: moving a joint drags these explicit targets WITH it
 // (a bone-hierarchy feel without breaking the flat target data the CM5 reads).
 const SUBTREE = {
@@ -42,15 +47,20 @@ export class AvatarPlayer {
     Object.assign(this.renderer.domElement.style, { width: '100%', height: '100%', display: 'block' });
     this.container.append(this.renderer.domElement);
 
-    this.scene.add(new THREE.HemisphereLight(0xbfe06a, 0x101410, 0.9));
+    this.scene.add(new THREE.HemisphereLight(0xb9dbe8, 0x101820, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(2, 4, 3); this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x84cc16, 0.6); rim.position.set(-3, 2, -2); this.scene.add(rim);
+    const rim = new THREE.DirectionalLight(CM5_AVATAR_RIM, 1.15); rim.position.set(-3, 2, -2); this.scene.add(rim);
 
     // ground
     const grid = new THREE.GridHelper(6, 12, 0x2a2e25, 0x1b1e18);
     grid.position.y = 0; this.scene.add(grid);
 
-    this.mat = new THREE.MeshStandardMaterial({ color: 0x20251a, roughness: 0.6, metalness: 0.1, emissive: 0x0a0d06 });
+    this.mat = new THREE.MeshStandardMaterial({
+      color: CM5_AVATAR_BASE,
+      roughness: 0.6,
+      metalness: 0.1,
+      emissive: 0x0b1720,
+    });
     this.group = new THREE.Group(); this.scene.add(this.group);
     this._buildMeshes();
     this._applyView();

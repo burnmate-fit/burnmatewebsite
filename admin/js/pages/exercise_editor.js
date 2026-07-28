@@ -199,6 +199,11 @@ async function segPreview(host, slug) {
   }
 
   const steps = Array.isArray(cfg.timeline) ? cfg.timeline : [];
+  const previewSummary = el('div', { class: 'flex flex-wrap gap-2 mb-3' },
+    pill(`schema v${cfg.schema_version || cfg.intro_schema_version || '?'}`, 'accent'),
+    pill(cfg.motion_model || cfg.trainer_animation?.mode || 'unknown model'),
+    pill(`orientation: ${cfg.base_orientation || 'legacy'}`),
+    pill(`view: ${cfg.view || cfg.presentation?.view || '?'}`));
   const stepCards = steps.map((s, i) => el('div', { class: 'border border-line rounded-lg p-3 mb-2' },
     el('div', { class: 'flex items-center gap-2 mb-2' }, pill(`${i + 1}. ${s.id || 'step'}`, 'accent')),
     el('div', { class: 'text-xs text-neutral-300' }, s.title || '—'),
@@ -216,7 +221,7 @@ async function segPreview(host, slug) {
   });
 
   host.replaceChildren(
-    card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-3' }, `Steps (${steps.length}) — text + voice`), ...stepCards),
+    card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-3' }, `Steps (${steps.length}) — text + voice`), previewSummary, ...stepCards),
     card(el('div', { class: 'text-xs font-bold text-accent uppercase tracking-wide mb-2' }, 'Preview JSON'), ta, el('div', { class: 'mt-3' }, btn), status),
   );
 
@@ -240,9 +245,11 @@ async function segTrainer(host, slug) {
   });
 
   const summary = el('div', { class: 'flex flex-wrap gap-2 mb-3' },
-    pill(anim.mode || 'no mode', 'accent'), pill(`view: ${anim.view || '?'}`),
+    pill(`schema v${anim.schema_version || raw.trainer_schema_version || '?'}`, 'accent'),
+    pill(anim.motion_model || anim.mode || 'no model'),
+    pill(`orientation: ${anim.base_orientation || 'legacy'}`),
+    pill(`view: ${anim.view || '?'}`),
     pill(`keyframes: ${Object.keys(kf).join(', ') || 'none'}`),
-    pill(anim.mode === 'biomech_fk_ik' ? 'v2 hybrid' : 'v1 (not migrated)', anim.mode === 'biomech_fk_ik' ? 'accent' : 'danger'),
   );
 
   const kfRows = Object.entries(kf).map(([name, vals]) => el('div', { class: 'border border-line rounded-lg p-3 mb-2' },
@@ -277,6 +284,7 @@ async function segTracking(host, slug) {
   const th = (cfg || {}).thresholds || {};
   const summary = el('div', { class: 'flex flex-wrap gap-2 mb-3' },
     cfg ? pill('configured', 'accent') : pill('missing — planner should not pick this', 'danger'),
+    cfg ? pill(`schema v${cfg.schema_version || '?'}`) : null,
     ...Object.entries(th).map(([k, v]) => pill(`${k}: ${v}`)),
   );
   const rules = [...((cfg || {}).mandatory_rules || []), ...((cfg || {}).feedback_rules || [])];
