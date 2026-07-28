@@ -9,6 +9,7 @@ import { renderTrainer } from './pages/trainer.js';
 import { renderNotifications } from './pages/notifications.js';
 import { renderCatalog } from './pages/catalog.js';
 import { renderUsers } from './pages/users.js';
+import { renderExerciseEditor } from './pages/exercise_editor.js';
 
 const ROUTES = [
   { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
@@ -16,6 +17,7 @@ const ROUTES = [
   { id: 'pipeline', label: 'AI Pipeline', icon: 'cpu', render: renderPipeline },
   { id: 'database', label: 'Database', icon: 'dumbbell', render: renderDatabase },
   { id: 'catalog', label: 'Catalog', icon: 'table', render: renderCatalog },
+  { id: 'exercise', label: 'Exercise Editor', icon: 'edit', render: renderExerciseEditor },
   { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
   { id: 'notifications', label: 'Notifications', icon: 'bell', render: renderNotifications },
   { id: 'users', label: 'Users', icon: 'person', render: renderUsers },
@@ -70,8 +72,52 @@ async function pingStatus() {
   }
 }
 
-buildNav();
-window.addEventListener('hashchange', route);
-if (!location.hash) location.hash = '#/analysis';
-route();
-pingStatus();
+// ── Simple entry gate ────────────────────────────────────────────────────
+// Hardcoded password to open the admin UI. This gates the UI only (the
+// backend API is separate); kept intentionally simple per request.
+const ADMIN_PASSWORD = '2026';
+
+function bootstrap() {
+  buildNav();
+  window.addEventListener('hashchange', route);
+  if (!location.hash) location.hash = '#/analysis';
+  route();
+  pingStatus();
+}
+
+function showGate() {
+  const overlay = el('div', {
+    class: 'fixed inset-0 z-[9999] flex items-center justify-center',
+    style: 'background:#0d0f0c;',
+  });
+  const input = el('input', {
+    type: 'password', placeholder: 'Password', autofocus: 'true',
+    class: 'w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm mb-3 focus:border-accent outline-none',
+  });
+  const err = el('div', { class: 'text-danger text-xs mb-3 hidden' }, 'Wrong password');
+  const btn = el('button', { class: 'w-full bg-accent text-ink font-semibold text-sm px-4 py-2 rounded-lg' }, 'Enter');
+  const submit = () => {
+    if (input.value === ADMIN_PASSWORD) {
+      sessionStorage.setItem('bm_admin_auth', '1');
+      overlay.remove();
+      bootstrap();
+    } else {
+      err.classList.remove('hidden');
+      input.value = '';
+      input.focus();
+    }
+  };
+  btn.onclick = submit;
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  overlay.append(el('div', { class: 'bg-surface border border-line rounded-xl p-8 w-80' },
+    el('div', { class: 'w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-ink font-extrabold mb-4' }, 'B'),
+    el('div', { class: 'font-bold text-lg mb-1' }, 'BurnMate Admin'),
+    el('div', { class: 'text-xs text-neutral-500 mb-4' }, 'Enter password to continue'),
+    input, err, btn,
+  ));
+  document.body.append(overlay);
+  input.focus();
+}
+
+if (sessionStorage.getItem('bm_admin_auth') === '1') bootstrap();
+else showGate();
