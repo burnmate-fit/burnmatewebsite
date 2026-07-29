@@ -234,9 +234,20 @@ export class AvatarPlayer {
     });
     // hands + feet as small accents
     this.accents = { l_wrist: 0.05, r_wrist: 0.05 };
+    // Hands mirror the device renderer (glr.py): an ellipsoid following the
+    // forearm, or — when the phase declares the hand planted — a palm lying on
+    // the floor with fingers spread forward.  A bare sphere here was the main
+    // reason the admin preview and the board looked different.
     this.hands = {};
     for (const k of ['l_wrist', 'r_wrist']) {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.058, 12, 10), this.mat); this.hands[k] = m; this.group.add(m);
+      const group = new THREE.Group();
+      const unit = () => new THREE.Mesh(new THREE.SphereGeometry(1, 14, 12), this.mat);
+      const palm = unit();
+      const fingers = [unit(), unit(), unit(), unit()];
+      const thumb = unit();
+      group.add(palm, ...fingers, thumb);
+      this.group.add(group);
+      this.hands[k] = { group, palm, fingers, thumb };
     }
     this.feet = {};
     for (const k of ['l_ankle', 'r_ankle']) {
@@ -358,6 +369,64 @@ export class AvatarPlayer {
     return poseAtDepth(this.anim, depth);
   }
 
+  /**
+   * Which hands are planted for this phase — port of the device's
+   * ShadowCoach._floor_palm_sides, so both renderers agree on when a hand
+   * becomes a floor palm.
+   */
+  static floorPalmSides(anim, phase) {
+    const out = new Set();
+    const contacts = anim?.contacts;
+    if (!Array.isArray(contacts)) return out;
+    for (const c of contacts) {
+      if (!c || !['planted', 'supported'].includes(c.mode)) continue;
+      if (Array.isArray(c.phases) && !c.phases.includes(phase)) continue;
+      if (c.joint === 'left_hand') out.add('l');
+      else if (c.joint === 'right_hand') out.add('r');
+    }
+    return out;
+  }
+
+  /** Mirror of glr.py's hand drawing so the preview matches the board. */
+  _placeHand(wristKey, V, planted) {
+    const HAND_LEN = 0.075;
+    const side = wristKey[0];
+    const h = this.hands[wristKey];
+    const wr = V(wristKey);
+    const el = V(`${side}_elbow`);
+    const setEllipsoid = (mesh, pos, scale, quat) => {
+      mesh.visible = true;
+      mesh.position.copy(pos);
+      mesh.scale.set(scale[0], scale[1], scale[2]);
+      mesh.quaternion.copy(quat || new THREE.Quaternion());
+    };
+    if (planted) {
+      // Palm flat on the floor, fingers forward (-Z). Axis-aligned: x=width,
+      // y=thickness, z=length — no rotation, or the long side stands upright.
+      const palmLen = HAND_LEN * 0.55;
+      setEllipsoid(h.palm, new THREE.Vector3(wr.x, 0.033, wr.z - palmLen * 0.5), [0.052, 0.022, palmLen]);
+      const fingerLen = HAND_LEN * 0.42;
+      const tipZ = wr.z - palmLen - fingerLen * 0.5;
+      [-0.030, -0.010, 0.010, 0.030].forEach((spread, i) => {
+        setEllipsoid(h.fingers[i], new THREE.Vector3(wr.x + spread, 0.026, tipZ),
+          [0.0105, 0.017, fingerLen * 0.5]);
+      });
+      const thumbX = wr.x + (side === 'l' ? 0.040 : -0.040);
+      setEllipsoid(h.thumb, new THREE.Vector3(thumbX, 0.026, wr.z - palmLen * 0.45),
+        [0.012, 0.016, fingerLen * 0.34]);
+      return;
+    }
+    // Free hand: an ellipsoid continuing along the forearm.
+    const dir = new THREE.Vector3().subVectors(wr, el);
+    if (dir.lengthSq() < 1e-8) dir.set(0, -1, 0);
+    dir.normalize();
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    setEllipsoid(h.palm, wr.clone().addScaledVector(dir, HAND_LEN * 0.40),
+      [0.050, HAND_LEN, 0.036], quat);
+    for (const f of h.fingers) f.visible = false;
+    h.thumb.visible = false;
+  }
+
   _applyPose(pose) {
     this.lastPose = pose;
     const V = (n) => { const p = pose[n] || STAND[n] || [0,0,0]; return new THREE.Vector3(p[0], p[1], p[2]); };
@@ -371,7 +440,10 @@ export class AvatarPlayer {
     });
     for (const [name] of JOINT_SPHERES) this.joints[name].position.copy(V(name));
     for (const m of this.ellipsoids) m.position.copy(V(m.userData.name));
-    for (const k of ['l_wrist', 'r_wrist']) this.hands[k].position.copy(V(k));
+    const floor = AvatarPlayer.floorPalmSides(this.anim, this.activePhase);
+    for (const k of ['l_wrist', 'r_wrist']) {
+      this._placeHand(k, V, floor.has(k[0]));
+    }
     for (const k of ['l_ankle', 'r_ankle']) {
       const ankle = V(k); const toe = V(k.replace('ankle', 'toe'));
       const direction = new THREE.Vector3().subVectors(toe, ankle);
