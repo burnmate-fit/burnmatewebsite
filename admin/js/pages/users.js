@@ -101,8 +101,8 @@ export async function renderUsers(view) {
     
     const exList = el('div', { class: 'mt-3 space-y-2' });
     
-    // State for editing
-    let currentExercises = (dayInfo.main_workout || []).map(ex => ({
+    // State for editing — filter out blank exercise entries
+    let currentExercises = (dayInfo.main_workout || []).filter(ex => ex.exercise && ex.exercise.trim()).map(ex => ({
       name: ex.exercise,
       sets: ex.sets || 3,
       reps: ex.reps || 10,
@@ -130,13 +130,17 @@ export async function renderUsers(view) {
       currentExercises.forEach((ex, i) => {
         const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
         
-        const sel = el('select', { class: 'flex-1 border border-line rounded px-2 py-1.5 text-xs' },
-           el('option', { value: ex.name, style: 'background:#1b1e18;color:#e7eadf;' }, ex.name)
-        );
+        // exercises API returns display_name (not name)
+        const sel = el('select', { class: 'flex-1 border border-line rounded px-2 py-1.5 text-xs' });
         sel.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+        // Add current exercise first (may not be in the exercises list)
+        const curOpt = el('option', { value: ex.name }, ex.name || '(unknown)');
+        curOpt.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+        sel.append(curOpt);
         exercises.forEach(catEx => {
-          if (catEx.name !== ex.name) {
-             const opt = el('option', { value: catEx.name }, catEx.name);
+          const exDisplayName = catEx.display_name || catEx.name || catEx.slug;
+          if (exDisplayName !== ex.name) {
+             const opt = el('option', { value: exDisplayName }, exDisplayName);
              opt.style.cssText = 'background:#1b1e18;color:#e7eadf;';
              sel.append(opt);
           }
