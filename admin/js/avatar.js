@@ -15,6 +15,17 @@ import {
 const CM5_AVATAR_BASE = 0x4d7599;
 const CM5_AVATAR_RIM = 0x73f2ff;
 
+// Keep these rounded hand proportions in sync with CM5 avatar3d/glr.py.
+// Values are half-extents of unit spheres stretched into soft capsules.
+const HAND = {
+  palmHalfWidth: 0.052, palmHalfLength: 0.042, palmHalfDepth: 0.040,
+  cuffHalfWidth: 0.041, cuffHalfLength: 0.022, cuffHalfDepth: 0.036,
+  fingerSpreads: [-0.024, -0.008, 0.008, 0.024],
+  fingerHalfLengths: [0.027, 0.034, 0.036, 0.030],
+  fingerHalfWidth: 0.0125, fingerHalfDepth: 0.0125,
+  thumbHalfWidth: 0.016, thumbHalfLength: 0.028, thumbHalfDepth: 0.014,
+};
+
 // editor carry-along: moving a joint drags these explicit targets WITH it
 // (a bone-hierarchy feel without breaking the flat target data the CM5 reads).
 const SUBTREE = {
@@ -243,11 +254,12 @@ export class AvatarPlayer {
       const group = new THREE.Group();
       const unit = () => new THREE.Mesh(new THREE.SphereGeometry(1, 14, 12), this.mat);
       const palm = unit();
+      const knuckles = unit();
       const fingers = [unit(), unit(), unit(), unit()];
       const thumb = unit();
-      group.add(palm, ...fingers, thumb);
+      group.add(palm, knuckles, ...fingers, thumb);
       this.group.add(group);
-      this.hands[k] = { group, palm, fingers, thumb };
+      this.hands[k] = { group, palm, knuckles, fingers, thumb };
     }
     this.feet = {};
     for (const k of ['l_ankle', 'r_ankle']) {
@@ -387,11 +399,12 @@ export class AvatarPlayer {
     return out;
   }
 
-  /** Mirror of glr.py's hand drawing so the preview matches the board. */
+  /** Mirror of glr.py's cuff, palm and finger drawing. */
   _placeHand(wristKey, V, planted) {
-    const HAND_LEN = 0.075;
     const side = wristKey[0];
     const h = this.hands[wristKey];
+    h.group.visible = true;
+    h.group.scale.set(1, 1, 1);
     const wr = V(wristKey);
     const el = V(`${side}_elbow`);
     const setEllipsoid = (mesh, pos, scale, quat) => {
@@ -400,31 +413,65 @@ export class AvatarPlayer {
       mesh.scale.set(scale[0], scale[1], scale[2]);
       mesh.quaternion.copy(quat || new THREE.Quaternion());
     };
+    const unitY = new THREE.Vector3(0, 1, 0);
+    const drawPart = (mesh, pos, axis, scale) => {
+      const direction = axis.clone();
+      if (direction.lengthSq() < 1e-8) direction.set(0, -1, 0);
+      direction.normalize();
+      const quat = new THREE.Quaternion().setFromUnitVectors(unitY, direction);
+      setEllipsoid(mesh, pos, scale, quat);
+    };
+    let axis; let sideAxis; let palmCenter;
     if (planted) {
-      // Palm flat on the floor, fingers forward (-Z). Axis-aligned: x=width,
-      // y=thickness, z=length — no rotation, or the long side stands upright.
-      const palmLen = HAND_LEN * 0.55;
-      setEllipsoid(h.palm, new THREE.Vector3(wr.x, 0.033, wr.z - palmLen * 0.5), [0.052, 0.022, palmLen]);
-      const fingerLen = HAND_LEN * 0.42;
-      const tipZ = wr.z - palmLen - fingerLen * 0.5;
-      [-0.030, -0.010, 0.010, 0.030].forEach((spread, i) => {
-        setEllipsoid(h.fingers[i], new THREE.Vector3(wr.x + spread, 0.026, tipZ),
-          [0.0105, 0.017, fingerLen * 0.5]);
-      });
-      const thumbX = wr.x + (side === 'l' ? 0.040 : -0.040);
-      setEllipsoid(h.thumb, new THREE.Vector3(thumbX, 0.026, wr.z - palmLen * 0.45),
-        [0.012, 0.016, fingerLen * 0.34]);
-      return;
+      // Weight-bearing palm: flat on the floor, fingertips forward (-Z).
+      axis = new THREE.Vector3(0, 0, -1);
+      sideAxis = new THREE.Vector3(1, 0, 0);
+      const cuffCenter = new THREE.Vector3(wr.x, 0.042, wr.z);
+      // The actual cuff overlaps the wrist, hiding the arm/hand seam.
+      if (!h.cuff) {
+        // Kept for backwards compatibility with a hot-reloaded older group.
+        h.cuff = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 12), this.mat);
+        h.group.add(h.cuff);
+      }
+      drawPart(h.cuff, cuffCenter, axis, [HAND.cuffHalfWidth, HAND.cuffHalfLength, HAND.cuffHalfDepth]);
+      palmCenter = cuffCenter.clone().addScaledVector(axis, HAND.palmHalfLength);
+      drawPart(h.palm, palmCenter, axis, [HAND.palmHalfWidth, HAND.palmHalfLength, HAND.palmHalfDepth]);
+    } else {
+      // Free hands inherit the final forearm direction.  This also makes a
+      // bent waist-resting arm read as a hand touching the hip, without any
+      // untracked finger joints.
+      axis = new THREE.Vector3().subVectors(wr, el);
+      if (axis.lengthSq() < 1e-8) axis.set(0, -1, 0);
+      axis.normalize();
+      const upHint = Math.abs(axis.z) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+      sideAxis = new THREE.Vector3().crossVectors(axis, upHint);
+      if (sideAxis.lengthSq() < 1e-8) sideAxis.set(1, 0, 0);
+      sideAxis.normalize();
+      if (!h.cuff) {
+        h.cuff = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 12), this.mat);
+        h.group.add(h.cuff);
+      }
+      drawPart(h.cuff, wr.clone().addScaledVector(axis, HAND.cuffHalfLength), axis,
+        [HAND.cuffHalfWidth, HAND.cuffHalfLength, HAND.cuffHalfDepth]);
+      palmCenter = wr.clone().addScaledVector(axis, HAND.cuffHalfLength + HAND.palmHalfLength);
+      drawPart(h.palm, palmCenter, axis, [HAND.palmHalfWidth, HAND.palmHalfLength, HAND.palmHalfDepth]);
     }
-    // Free hand: an ellipsoid continuing along the forearm.
-    const dir = new THREE.Vector3().subVectors(wr, el);
-    if (dir.lengthSq() < 1e-8) dir.set(0, -1, 0);
-    dir.normalize();
-    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    setEllipsoid(h.palm, wr.clone().addScaledVector(dir, HAND_LEN * 0.40),
-      [0.050, HAND_LEN, 0.036], quat);
-    for (const f of h.fingers) f.visible = false;
-    h.thumb.visible = false;
+    const fingerStart = palmCenter.clone().addScaledVector(axis, HAND.palmHalfLength);
+    // Rounded knuckle bridge keeps the four cosmetic digits visually joined
+    // to the palm at compact CM5/Admin preview sizes.
+    drawPart(h.knuckles, fingerStart.clone().addScaledVector(axis, -0.005), sideAxis,
+      [0.016, 0.045, 0.016]);
+    HAND.fingerSpreads.forEach((spread, i) => {
+      const halfLength = HAND.fingerHalfLengths[i];
+      const pos = fingerStart.clone().addScaledVector(axis, halfLength).addScaledVector(sideAxis, spread);
+      drawPart(h.fingers[i], pos, axis, [HAND.fingerHalfWidth, halfLength, HAND.fingerHalfDepth]);
+    });
+    const thumbSign = side === 'l' ? 1 : -1;
+    const thumbAxis = axis.clone().multiplyScalar(0.60).addScaledVector(sideAxis, thumbSign * 0.80).normalize();
+    const thumbPos = palmCenter.clone().addScaledVector(axis, 0.004)
+      .addScaledVector(sideAxis, thumbSign * 0.035)
+      .addScaledVector(thumbAxis, HAND.thumbHalfLength);
+    drawPart(h.thumb, thumbPos, thumbAxis, [HAND.thumbHalfWidth, HAND.thumbHalfLength, HAND.thumbHalfDepth]);
   }
 
   _applyPose(pose) {
