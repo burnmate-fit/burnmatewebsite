@@ -424,9 +424,13 @@ export class AvatarPlayer {
     let axis; let sideAxis; let palmCenter;
     if (planted) {
       // Weight-bearing palm: flat on the floor, fingertips forward (-Z).
+      // The solved wrist is the skeletal contact point.  Keep the cosmetic
+      // cuff on it instead of replacing its Y with a renderer-only floor
+      // value; otherwise a correctly planted Bird Dog hand visibly splits
+      // from its palm in the Admin preview.
       axis = new THREE.Vector3(0, 0, -1);
       sideAxis = new THREE.Vector3(1, 0, 0);
-      const cuffCenter = new THREE.Vector3(wr.x, 0.042, wr.z);
+      const cuffCenter = wr.clone();
       // The actual cuff overlaps the wrist, hiding the arm/hand seam.
       if (!h.cuff) {
         // Kept for backwards compatibility with a hot-reloaded older group.
