@@ -461,6 +461,21 @@ export class AvatarPlayer {
       drawPart(h.palm, palmCenter, axis, [HAND.palmHalfWidth, HAND.palmHalfLength, HAND.palmHalfDepth]);
     }
     const fingerStart = palmCenter.clone().addScaledVector(axis, HAND.palmHalfLength);
+    if (this.anim?.render?.hand_style === 'closed_fist') {
+      // Mirror CM5's compact equipment-free fist: the palm is the fist body,
+      // with a closed knuckle ridge and a thumb wrapping its outer edge.
+      drawPart(h.knuckles, palmCenter.clone().addScaledVector(axis, 0.024), sideAxis,
+        [0.015, 0.038, 0.015]);
+      h.fingers.forEach((finger) => { finger.visible = false; });
+      const thumbSign = side === 'l' ? 1 : -1;
+      const thumbAxis = axis.clone().multiplyScalar(0.35)
+        .addScaledVector(sideAxis, thumbSign * 0.94).normalize();
+      const thumbPos = palmCenter.clone().addScaledVector(sideAxis, thumbSign * 0.025)
+        .addScaledVector(thumbAxis, 0.018);
+      drawPart(h.thumb, thumbPos, thumbAxis,
+        [HAND.thumbHalfWidth, 0.021, HAND.thumbHalfDepth]);
+      return;
+    }
     // Rounded knuckle bridge keeps the four cosmetic digits visually joined
     // to the palm at compact CM5/Admin preview sizes.
     drawPart(h.knuckles, fingerStart.clone().addScaledVector(axis, -0.005), sideAxis,
