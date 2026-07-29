@@ -130,12 +130,15 @@ export async function renderUsers(view) {
       currentExercises.forEach((ex, i) => {
         const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
         
-        const sel = el('select', { class: 'flex-1 bg-ink border border-line rounded px-2 py-1.5 text-xs text-white' },
-           el('option', { value: ex.name }, ex.name)
+        const sel = el('select', { class: 'flex-1 border border-line rounded px-2 py-1.5 text-xs' },
+           el('option', { value: ex.name, style: 'background:#1b1e18;color:#e7eadf;' }, ex.name)
         );
+        sel.style.cssText = 'background:#1b1e18;color:#e7eadf;';
         exercises.forEach(catEx => {
           if (catEx.name !== ex.name) {
-             sel.append(el('option', { value: catEx.name }, catEx.name));
+             const opt = el('option', { value: catEx.name }, catEx.name);
+             opt.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+             sel.append(opt);
           }
         });
         sel.value = ex.name;
