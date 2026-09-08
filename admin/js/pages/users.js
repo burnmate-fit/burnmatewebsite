@@ -96,9 +96,24 @@ export async function renderUsers(view) {
     container.append(daysWrap);
   }
 
+  // The label is prose the planner wrote; the exercises are the data. A day
+  // that has exercises is a workout day and a day with none is a rest day,
+  // whatever the label used to say — and the label must follow, because the
+  // kiosk (and anyone reading the plan) trusts it.
+  const isRestLabel = (s) => /rest|recovery/i.test(s || '');
+  function deriveFocus(typed, previous, hasExercises) {
+    const t = (typed || '').trim();
+    if (!hasExercises) return isRestLabel(t || previous) ? (t || previous) : 'Rest & Recovery';
+    if (t && !isRestLabel(t)) return t;
+    if (previous && !isRestLabel(previous)) return previous;
+    return 'Light Workout';
+  }
+
   function renderDayCard(userId, dayInfo) {
-    const isRest = (dayInfo.workout_focus || '').toLowerCase().includes('rest');
-    
+    // Editable in edit mode; auto-fixed on save when the day changes kind.
+    let currentFocus = dayInfo.workout_focus || '';
+    const focusLabel = el('div', { class: 'text-xs text-neutral-400 mt-1 mb-2 uppercase tracking-wide' }, currentFocus);
+
     const exList = el('div', { class: 'mt-3 space-y-2' });
     
     // State for editing — filter out blank exercise entries
@@ -108,10 +123,10 @@ export async function renderUsers(view) {
       reps: ex.reps || 10,
       rest_time: ex.rest_time || 60
     }));
-    
+
     function drawExercises(editMode = false) {
       exList.innerHTML = '';
-      
+
       if (!editMode) {
         if (currentExercises.length === 0) {
            exList.append(el('div', { class: 'text-xs text-neutral-500 italic' }, 'No exercises / Rest day'));
@@ -127,6 +142,17 @@ export async function renderUsers(view) {
       }
       
       // Edit mode
+      const focusRow = el('div', { class: 'flex gap-2 items-center' });
+      const focusInp = el('input', { type: 'text', class: 'flex-1 bg-ink border border-line rounded px-2 py-1.5 text-xs',
+                                     value: currentFocus, placeholder: 'Day focus, e.g. Lower Body & Core' });
+      focusInp.oninput = (e) => { currentFocus = e.target.value; };
+      focusRow.append(el('span', { class: 'text-xs text-neutral-500' }, 'focus:'), focusInp);
+      exList.append(focusRow);
+      if (currentExercises.length && isRestLabel(currentFocus)) {
+        exList.append(el('div', { class: 'text-xs text-warning' },
+          'This day has exercises, so it is no longer a rest day — the label will be updated on save.'));
+      }
+
       currentExercises.forEach((ex, i) => {
         const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
         
@@ -192,35 +218,44 @@ export async function renderUsers(view) {
        saveBtn.style.display = 'none';
        cancelBtn.style.display = 'none';
        // Revert
-       currentExercises = (dayInfo.main_workout || []).map(ex => ({
+       currentExercises = (dayInfo.main_workout || []).filter(ex => ex.exercise && ex.exercise.trim()).map(ex => ({
           name: ex.exercise, sets: ex.sets || 3, reps: ex.reps || 10, rest_time: ex.rest_time || 60
        }));
+       currentFocus = dayInfo.workout_focus || '';
        drawExercises(false);
     };
-    
+
     saveBtn.onclick = async () => {
        saveBtn.disabled = true;
        saveBtn.textContent = 'Saving...';
        try {
          const payload = {
             day: dayInfo.day,
-            workout_focus: dayInfo.workout_focus,
+            workout_focus: deriveFocus(currentFocus, dayInfo.workout_focus, currentExercises.length > 0),
             exercises: currentExercises
          };
-         
+
          const res = await fetch(`${API_BASE}/admin/api/users/${userId}/plan/day-workout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
          });
-         
-         if (!res.ok) throw new Error('Failed to save');
-         
-         // Update local state
+
+         if (!res.ok) {
+            let detail = '';
+            try { detail = (await res.json()).detail || ''; } catch (_) { /* no body */ }
+            throw new Error(detail ? `Failed to save: ${detail}` : 'Failed to save');
+         }
+         const saved = await res.json().catch(() => ({}));
+
+         // Update local state from what the server actually stored
          dayInfo.main_workout = currentExercises.map(ex => ({
             exercise: ex.name, sets: ex.sets, reps: ex.reps, rest_time: ex.rest_time
          }));
-         
+         dayInfo.workout_focus = saved.workout_focus || payload.workout_focus;
+         currentFocus = dayInfo.workout_focus;
+         focusLabel.textContent = dayInfo.workout_focus;
+
          editBtn.style.display = '';
          saveBtn.style.display = 'none';
          cancelBtn.style.display = 'none';
@@ -238,7 +273,7 @@ export async function renderUsers(view) {
         el('div', { class: 'font-bold text-accent' }, dayInfo.day),
         el('div', { class: 'flex gap-2' }, editBtn, saveBtn, cancelBtn)
       ),
-      el('div', { class: 'text-xs text-neutral-400 mt-1 mb-2 uppercase tracking-wide' }, dayInfo.workout_focus),
+      focusLabel,
       exList
     );
   }
