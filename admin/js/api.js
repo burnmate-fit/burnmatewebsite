@@ -47,6 +47,7 @@ export const api = {
   saveIntroConfig: (slug, config) => req(`/trainer/${slug}/intro-config`, { method: 'PUT', body: JSON.stringify({ config }) }),
   trackerConfig: (slug) => req(`/tracker/${slug}/config`),
   saveTrackerConfig: (slug, body) => req(`/tracker/${slug}/config`, { method: 'PUT', body: JSON.stringify(body) }),
+  exerciseCards: () => req('/exercise-cards'),
 
   // ── Notifications ──
   notifStatus: () => req('/notifications/status'),
