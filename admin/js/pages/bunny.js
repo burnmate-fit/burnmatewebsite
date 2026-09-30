@@ -8,8 +8,8 @@
 import { api, API_BASE } from '../api.js';
 import { el, header, card, spinner, errorBox, pill, tabs } from '../ui.js';
 import { icon } from '../icons.js';
+import { storedKey, saveKey, adminKey, withAdminKey as write } from '../admin_key.js';
 
-const KEY_STORE = 'bunnyAdminKey';
 const LANG_LABEL = { 'en-IN': 'English', 'te-IN': 'Telugu', common: 'Sound' };
 const KIND_TONE = { motivation: 'accent', question: 'neutral', reply: 'neutral', sound: 'neutral' };
 const STATE_PILL = {
@@ -28,42 +28,6 @@ const smallBtn = (text, iconName, onclick, variant = 'outline') => el('button', 
 }, iconName ? icon(iconName, 'w-3.5 h-3.5') : null, text);
 
 let state = { tab: 'lines' };
-
-function storedKey() {
-  try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; }
-}
-
-function saveKey(k) {
-  try { k ? localStorage.setItem(KEY_STORE, k) : localStorage.removeItem(KEY_STORE); } catch { /* private window */ }
-}
-
-// The admin key, asked for once (and again if the server refuses it).
-async function adminKey(force = false) {
-  let k = force ? '' : storedKey();
-  while (!k) {
-    k = (window.prompt('Bunny Voice admin key (BUNNY_ADMIN_KEY on the server):') || '').trim();
-    if (!k) return null;
-    try { await api.bunnyCheck(k); saveKey(k); } catch (e) { window.alert(`That key did not work: ${e.message}`); k = ''; }
-  }
-  return k;
-}
-
-// Run a write; on a refused key, ask again once.
-async function write(fn) {
-  let k = await adminKey();
-  if (!k) return null;
-  try {
-    return await fn(k);
-  } catch (e) {
-    if (/admin key/i.test(e.message)) {
-      saveKey('');
-      k = await adminKey(true);
-      if (!k) return null;
-      return fn(k);
-    }
-    throw e;
-  }
-}
 
 function audio(voice) {
   if (!voice || !voice.urls) return el('span', { class: 'text-xs text-neutral-600' }, '—');

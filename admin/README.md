@@ -29,6 +29,9 @@ cd burnmate_backend
   its English and Telugu wording, and its recording (listen, edit, regenerate, add or remove a
   line). Replaced / removed recordings go to a trash, playable and restorable. Writes ask once
   for the admin key (`BUNNY_ADMIN_KEY` on the server).
+- **Keys** — the secrets the server uses (Sarvam, Gemini, admin key, tunnel token): set or
+  missing, where from, the last 4 characters, a live test, and a write-only replace. They live
+  in `burnmate_secrets\` beside the backend folder, never in git.
 - **Trainer Designer** — fetches a trainer config and plays the avatar in three.js,
   using `js/solver.js` (a faithful port of the CM5 `rig.py`/`ik.py`).
 

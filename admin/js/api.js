@@ -72,6 +72,11 @@ export const api = {
   bunnyRecord: (key, line, lang) => req(`/bunny/voices/${encodeURIComponent(line)}/${lang}`,
     { method: 'POST', headers: bunnyHeaders(key) }),
   bunnyRestore: (key, id) => req(`/bunny/trash/${id}/restore`, { method: 'POST', headers: bunnyHeaders(key) }),
+
+  // ── Keys ── (write-only: the server never sends a value back)
+  keys: (key) => req('/keys', { headers: bunnyHeaders(key) }),
+  setKey: (key, name, value) => req(`/keys/${name}`, { method: 'PUT', headers: bunnyHeaders(key), body: JSON.stringify({ value }) }),
+  testKey: (key, name) => req(`/keys/${name}/test`, { method: 'POST', headers: bunnyHeaders(key) }),
 };
 
 function bunnyHeaders(key) {
