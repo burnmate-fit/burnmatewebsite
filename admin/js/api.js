@@ -58,4 +58,22 @@ export const api = {
   deleteReminder: (id) => req(`/notifications/reminders/${id}`, { method: 'DELETE' }),
   sendNow: (b) => req('/notifications/send-now', { method: 'POST', body: JSON.stringify(b) }),
   notifLog: () => req('/notifications/log'),
+
+  // ── Bunny Voice ── (writes carry the admin key: recording spends Sarvam credit)
+  bunnyCatalog: () => req('/bunny/catalog'),
+  bunnyTrash: () => req('/bunny/trash'),
+  bunnyCheck: (key) => req('/bunny/check', { headers: { 'X-Admin-Key': key } }),
+  bunnyEdit: (key, line, lang, text) => req(`/bunny/lines/${encodeURIComponent(line)}/${lang}`,
+    { method: 'PUT', headers: bunnyHeaders(key), body: JSON.stringify({ text }) }),
+  bunnyAdd: (key, group, texts) => req(`/bunny/groups/${encodeURIComponent(group)}/lines`,
+    { method: 'POST', headers: bunnyHeaders(key), body: JSON.stringify({ texts }) }),
+  bunnyRemove: (key, line) => req(`/bunny/lines/${encodeURIComponent(line)}`,
+    { method: 'DELETE', headers: bunnyHeaders(key) }),
+  bunnyRecord: (key, line, lang) => req(`/bunny/voices/${encodeURIComponent(line)}/${lang}`,
+    { method: 'POST', headers: bunnyHeaders(key) }),
+  bunnyRestore: (key, id) => req(`/bunny/trash/${id}/restore`, { method: 'POST', headers: bunnyHeaders(key) }),
 };
+
+function bunnyHeaders(key) {
+  return { 'Content-Type': 'application/json', 'X-Admin-Key': key };
+}

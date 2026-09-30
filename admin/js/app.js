@@ -11,6 +11,7 @@ import { renderCatalog } from './pages/catalog.js';
 import { renderUsers } from './pages/users.js';
 import { renderExerciseEditor } from './pages/exercise_editor.js';
 import { renderRules } from './pages/rules.js';
+import { renderBunny } from './pages/bunny.js';
 
 const ROUTES = [
   { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
@@ -21,6 +22,7 @@ const ROUTES = [
   { id: 'exercise', label: 'Exercise Editor', icon: 'edit', render: renderExerciseEditor },
   { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
   { id: 'rules', label: 'Rule Cards', icon: 'alert', render: renderRules },
+  { id: 'bunny', label: 'Bunny Voice', icon: 'mic', render: renderBunny },
   { id: 'notifications', label: 'Notifications', icon: 'bell', render: renderNotifications },
   { id: 'users', label: 'Users', icon: 'person', render: renderUsers },
 ];

@@ -25,6 +25,10 @@ cd burnmate_backend
 - **Schema** — live ER diagram of the connected Postgres + per-table columns.
 - **AI Pipeline** — inputs we collect (with options), the rendered prompt, outputs.
 - **Database → Exercises** — CRUD on the exercise registry. **Food** — placeholder.
+- **Bunny Voice** — every line the kiosk's voice assistant says: which state triggers it,
+  its English and Telugu wording, and its recording (listen, edit, regenerate, add or remove a
+  line). Replaced / removed recordings go to a trash, playable and restorable. Writes ask once
+  for the admin key (`BUNNY_ADMIN_KEY` on the server).
 - **Trainer Designer** — fetches a trainer config and plays the avatar in three.js,
   using `js/solver.js` (a faithful port of the CM5 `rig.py`/`ik.py`).
 
