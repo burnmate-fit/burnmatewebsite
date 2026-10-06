@@ -1,4 +1,4 @@
-// Catalog — browse the stored Food (rag_foods, 1014) and Exercise (exercises, 57)
+// Catalog — browse the stored Food (ingredients) and Exercise (exercises) tables
 // tables exactly as seeded, with search. Read-only viewer.
 import { api } from '../api.js';
 import { el, header, card, tabs, spinner, errorBox, pill } from '../ui.js';
@@ -46,7 +46,7 @@ async function load(which, holder, q) {
     const all = which === 'foods' ? d.foods : d.exercises;
     const rows = all.slice(0, RENDER_CAP);
     const capped = all.length > RENDER_CAP;
-    const tbl = which === 'foods' ? 'rag_foods' : 'exercises';
+    const tbl = which === 'foods' ? 'ingredients' : 'exercises';
     holder.replaceChildren(
       el('p', { class: 'text-[12px] text-neutral-500 mb-2' },
         `${d.total} total in ${tbl}` +
@@ -67,7 +67,7 @@ export function renderCatalog(view) {
     oninput: debounce((e) => load(which, holder, e.target.value.trim()), 300),
   });
   const tabBar = tabs(
-    [['foods', 'Foods (1014)'], ['exercises', 'Exercises (57)']],
+    [['foods', 'Foods'], ['exercises', 'Exercises']],
     which,
     (id) => { which = id; search.value = ''; load(which, holder, ''); });
 

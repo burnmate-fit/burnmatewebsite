@@ -8,6 +8,7 @@ import { renderDatabase } from './pages/database.js';
 import { renderTrainer } from './pages/trainer.js';
 import { renderNotifications } from './pages/notifications.js';
 import { renderCatalog } from './pages/catalog.js';
+import { renderFood } from './pages/food.js';
 import { renderUsers } from './pages/users.js';
 import { renderExerciseEditor } from './pages/exercise_editor.js';
 import { renderRules } from './pages/rules.js';
@@ -19,6 +20,7 @@ const ROUTES = [
   { id: 'schema', label: 'Schema', icon: 'table', render: renderSchema },
   { id: 'pipeline', label: 'AI Pipeline', icon: 'cpu', render: renderPipeline },
   { id: 'database', label: 'Database', icon: 'dumbbell', render: renderDatabase },
+  { id: 'food', label: 'Food Data', icon: 'utensils', render: renderFood },
   { id: 'catalog', label: 'Catalog', icon: 'table', render: renderCatalog },
   { id: 'exercise', label: 'Exercise Editor', icon: 'edit', render: renderExerciseEditor },
   { id: 'trainer', label: 'Trainer Designer', icon: 'person', render: renderTrainer },
