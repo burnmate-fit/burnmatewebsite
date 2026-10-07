@@ -30,6 +30,9 @@ const DIET_DOT = {
 };
 const POPULARITY = { 1: 'Everyday', 2: 'Weekly', 3: 'Occasional' };
 const COST = { 1: 'Cheap', 2: 'Medium', 3: 'Premium' };
+// regional ranking: an ingredient typical of the user's cuisine ranks higher (never a filter)
+const REGION_LABEL = { pan: 'All India', north: 'North', south: 'South', east: 'East', west: 'West', northeast: 'North East' };
+const regionText = (r) => arr(r.regions).map((g) => REGION_LABEL[g] || g).join(', ');
 const UNKNOWN = 'text-amber-400';
 
 const isBlank = (v) => v === null || v === undefined || v === '';
@@ -190,6 +193,7 @@ function detail(r) {
         chips('Allergens', arr(r.allergens), 'danger'),
         chips('Avoided by (restrictions)', arr(r.avoid_tags), 'neutral'),
         chips('Usual meals', arr(r.meal_slots), 'neutral'),
+        chips(`Region${r.region_basis ? ` (${r.region_basis})` : ''}`, arr(r.regions).map((g) => REGION_LABEL[g] || g), 'accent'),
         chips('Ranking', [POPULARITY[r.popularity] || '?', COST[r.cost_tier] || '?',
           r.diabetic_friendly ? 'diabetic friendly' : 'not diabetic friendly'], 'neutral')),
       el('div', { class: 'mt-2 text-[12px] text-neutral-300' },
@@ -203,7 +207,7 @@ function detail(r) {
 const TABLE_COLS = [
   ['image_url', ''], ['food_code', 'code'], ['name', 'name'], ['local_names', 'local names'], ['category', 'category'],
   ['diet_type', 'diet'], ['allergens', 'allergens'], ['avoid_tags', 'avoid'], ['meal_slots', 'meals'],
-  ['popularity', 'pop'], ['cost_tier', 'cost'], ...NUTRIENTS.map(([k, label, unit]) => [k, `${label} ${unit}`]),
+  ['regions', 'region'], ['popularity', 'pop'], ['cost_tier', 'cost'], ...NUTRIENTS.map(([k, label, unit]) => [k, `${label} ${unit}`]),
   ['household_unit', 'unit'], ['unit_grams', 'g/unit'], ['min_g', 'min g'], ['max_g', 'max g'],
   ['diabetic_friendly', 'diabetic ok'], ['source', 'source'], ['verified', 'verified'],
 ];
@@ -230,6 +234,7 @@ function tableView(rows, state, rerender) {
     if (k === 'category') return CATEGORY_LABEL[v] || v;
     if (k === 'popularity') return POPULARITY[v] || v;
     if (k === 'cost_tier') return COST[v] || v;
+    if (k === 'regions') return regionText(r);
     if (isBlank(v)) return el('span', { class: UNKNOWN }, '—');
     if (Array.isArray(v)) return v.length ? v.join(', ') : el('span', { class: 'text-neutral-600' }, '·');
     if (typeof v === 'boolean') return v ? '✓' : '✗';
@@ -286,7 +291,7 @@ export async function renderFood(view) {
     holder.replaceChildren(errorBox(e));
     return;
   }
-  const state = { view: 'tree', cat: null, item: null, itemQuery: '', query: '', catFilter: '', gapsOnly: false, sort: null };
+  const state = { view: 'tree', cat: null, item: null, itemQuery: '', query: '', catFilter: '', regionFilter: '', gapsOnly: false, sort: null };
   const body = el('div', {});
   const search = el('input', {
     class: 'w-56 text-sm px-3 py-1.5 rounded-lg border border-line bg-transparent', placeholder: 'Search all…',
@@ -298,6 +303,12 @@ export async function renderFood(view) {
   }, el('option', { value: '' }, 'All categories'),
   ...Object.keys(CATEGORY_LABEL).filter((c) => rows.some((r) => r.category === c))
     .map((c) => el('option', { value: c }, CATEGORY_LABEL[c])));
+  const regionSelect = el('select', {
+    class: 'text-sm px-2 py-1.5 rounded-lg border border-line bg-surface',
+    onchange: (e) => { state.regionFilter = e.target.value; draw(); },
+  }, el('option', { value: '' }, 'All regions'),
+  ...Object.keys(REGION_LABEL).map((g) => el('option', { value: g },
+    `${REGION_LABEL[g]} (${rows.filter((r) => arr(r.regions).includes(g)).length})`)));
   const gapsBox = el('label', { class: 'flex items-center gap-1.5 text-[12px] text-neutral-400' },
     el('input', { type: 'checkbox', onchange: (e) => { state.gapsOnly = e.target.checked; draw(); } }), 'only with gaps');
   const download = el('button', {
@@ -308,8 +319,9 @@ export async function renderFood(view) {
 
   function filtered() {
     return rows.filter((r) => (!state.catFilter || r.category === state.catFilter)
+      && (!state.regionFilter || arr(r.regions).includes(state.regionFilter))
       && (!state.gapsOnly || gaps(r).length)
-      && (!state.query || `${r.name} ${arr(r.local_names).join(' ')} ${r.food_code} ${r.category} ${arr(r.allergens).join(' ')}`
+      && (!state.query || `${r.name} ${arr(r.local_names).join(' ')} ${r.food_code} ${r.category} ${arr(r.allergens).join(' ')} ${regionText(r)}`
         .toLowerCase().includes(state.query)));
   }
 
@@ -324,7 +336,7 @@ export async function renderFood(view) {
   holder.replaceChildren(
     summary(rows, status),
     card(el('div', { class: 'flex items-center justify-between gap-3 flex-wrap' }, tabBar,
-      el('div', { class: 'flex items-center gap-2 flex-wrap mb-6' }, search, catSelect, gapsBox, download)), body));
+      el('div', { class: 'flex items-center gap-2 flex-wrap mb-6' }, search, catSelect, regionSelect, gapsBox, download)), body));
   const onResize = debounce(() => {
     if (!body.isConnected) { window.removeEventListener('resize', onResize); return; }
     draw(true);
