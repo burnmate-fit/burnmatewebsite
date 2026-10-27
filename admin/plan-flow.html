@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BurnMate Plan Flow</title>
+<title>BurnMate Flows</title>
 <script>if(location.search.includes('embed')){document.documentElement.classList.add('embed');document.documentElement.setAttribute('data-theme','dark');}</script>
 <style>
 :root{
@@ -36,7 +36,7 @@ h1{font-size:30px;line-height:1.15;margin:0 0 10px;letter-spacing:-.02em}
 .sum h4{margin:0 0 4px;font-size:14.5px}
 .sum p{margin:0;color:var(--muted);font-size:13.5px}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
-.board{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:22px;padding:28px 26px 34px}
+.board{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:22px;padding:28px 46px 34px 26px}
 svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .wire{fill:none;stroke:var(--arrow);stroke-width:1.8}
 .wire.back{stroke:var(--gate);stroke-dasharray:6 6}
@@ -109,7 +109,7 @@ html.embed .board{border-radius:16px}
 html.embed .panel{border-radius:16px}
 html.embed aside{top:2px}
 html.embed .layout{grid-template-columns:minmax(0,1fr) 340px;gap:20px}
-html.embed .board{padding:22px 16px 26px}
+html.embed .board{padding:22px 40px 26px 16px}
 html.embed .grid{column-gap:20px}
 html.embed .node{padding:12px 13px;gap:10px}
 html.embed .node .t{font-size:14px}
@@ -120,20 +120,33 @@ html.embed .pb{padding:16px 18px 18px} html.embed .ph{padding:18px 18px 14px}
 html.embed footer{margin-top:20px}
 html.embed ::-webkit-scrollbar{width:10px;height:10px}
 html.embed ::-webkit-scrollbar-thumb{background:#2a2e25;border-radius:6px}
+.tabs{display:flex;gap:6px;margin:0 0 22px;border-bottom:1px solid var(--line)}
+.tabbtn{display:inline-flex;align-items:center;gap:8px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit;font-size:14.5px;font-weight:650;padding:10px 14px 12px;cursor:pointer;margin-bottom:-1px}
+.tabbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tabbtn:hover{color:var(--text)}
+.tabbtn[aria-selected="true"]{color:var(--food);border-bottom-color:var(--food)}
+.pane[hidden]{display:none}
+.wlabel.mid{text-anchor:middle}
 </style>
 </head>
 <body>
 <div class="page">
 <header>
   <div>
-    <h1>How a BurnMate weekly plan is made</h1>
-    <p class="lede">The server prepares <b>food</b> and <b>exercise</b> separately, merges them into <b>one prompt</b>, lets the AI <b>choose</b> from safe lists, then
-      computes and checks every number itself. Click any box — the panel explains it in plain words and shows what happens for <b>Asha</b>, a sample user.</p>
+    <h1>How BurnMate works</h1>
+    <p class="lede">Two flowcharts: <b>Weekly plan</b> — how the server turns your answers into meals and workouts (the AI only <b>chooses</b>; the server computes and checks every number) — and <b>CM5 workout</b> — how the TV box tracks you with MediaPipe, counts reps, coaches form and saves results. Click any box for a plain explanation, a worked example and the exact rules.</p>
   </div>
   <div class="tools"><button class="btn" id="theme" type="button">Light / dark</button></div>
 </header>
 
-<div class="summary">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--arrow)"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gate)"/></marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--srv)"/></marker>
+  </defs></svg><div class="tabs" role="tablist">
+  <button class="tabbtn" role="tab" data-tab="plan" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Weekly plan</button>
+  <button class="tabbtn" role="tab" data-tab="cm5" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg> CM5 workout</button>
+</div><section class="pane" data-pane="plan"><div class="summary">
   <div class="sum k-gate"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><div><h4>Safety first</h4><p>A profile check runs before anything else.</p></div></div>
   <div class="sum k-food"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div><div><h4>No AI in the maths</h4><p>Calories, macros and safe lists are pure server rules.</p></div></div>
   <div class="sum k-ai"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/></svg></div><div><h4>One AI call per part</h4><p>Mon–Wed, then Thu–Sun. Gemini first, Groq if it fails.</p></div></div>
@@ -141,13 +154,9 @@ html.embed ::-webkit-scrollbar-thumb{background:#2a2e25;border-radius:6px}
 </div>
 
 <div class="layout">
-<div class="board" id="board">
-  <svg class="wires" id="wires" aria-hidden="true"><defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--arrow)"/></marker>
-    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gate)"/></marker>
-    <marker id="ahb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--srv)"/></marker>
-  </defs></svg>
-  <div class="grid" id="grid">
+<div class="board" data-r="board">
+  <svg class="wires" data-r="wires" aria-hidden="true"></svg>
+  <div class="grid">
     <div class="sec">1 · What starts a plan</div>
     <div class="col1"><button class="node k-start" type="button" data-k="trigger_app" data-kind="k-start" data-icon="phone"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></span><span class="tx"><span class="t">App asks for a plan</span><span class="s">Onboarding or profile change</span></span></button></div>
     <div class="col2"><button class="node k-start" type="button" data-k="trigger_stale" data-kind="k-start" data-icon="calendar"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span class="tx"><span class="t">New week, no plan yet</span><span class="s">Opening the app on a new week</span></span></button></div>
@@ -192,14 +201,14 @@ html.embed ::-webkit-scrollbar-thumb{background:#2a2e25;border-radius:6px}
 </div>
 
 <aside>
-  <div class="panel" id="panel" aria-live="polite">
-    <div class="ph"><div class="ic" id="pic"></div><div><span class="tag" id="ptag"></span><h3 id="ptitle"></h3></div></div>
+  <div class="panel" data-r="panel" aria-live="polite">
+    <div class="ph"><div class="ic" data-r="pic"></div><div><span class="tag" data-r="ptag"></span><h3 data-r="ptitle"></h3></div></div>
     <div class="pb">
-      <p class="plain" id="pplain"></p>
-      <div class="eg"><div class="h"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> For Asha</div><p id="pex"></p></div>
-      <div class="rules"><h5>Exact rules</h5><ul id="prules"></ul><span class="file" id="pfile"></span></div>
+      <p class="plain" data-r="pplain"></p>
+      <div class="eg"><div class="h"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> For Asha</div><p data-r="pex"></p></div>
+      <div class="rules"><h5>Exact rules</h5><ul data-r="prules"></ul><span class="file" data-r="pfile"></span></div>
     </div>
-    <div class="nav"><button class="btn" id="prev" type="button">← Previous</button><button class="btn" id="next" type="button">Next →</button></div>
+    <div class="nav"><button class="btn" data-r="prev" type="button">← Previous</button><button class="btn" data-r="next" type="button">Next →</button></div>
   </div>
   <div class="panel" style="margin-top:16px;padding:18px 22px">
     <div style="font-weight:650;margin-bottom:2px">Sample user: Asha</div>
@@ -209,10 +218,37 @@ html.embed ::-webkit-scrollbar-thumb{background:#2a2e25;border-radius:6px}
 </aside>
 </div>
 
-<footer>Traced from burnmate_backend (commit 69a9050, 28 Oct 2026). Update this page whenever a major filter, rule or step changes. Numbers can drift when the code changes; each step names its source file. Arrow keys move between steps.</footer>
+<footer>Traced from burnmate_backend (commit 69a9050, 28 Oct 2026). Update this page whenever a major filter, rule or step changes. Numbers can drift when the code changes; each step names its source file. Arrow keys move between steps.</footer></section><section class="pane" data-pane="cm5" hidden><div class="summary">
+  <div class="sum k-ex"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="m9.5 20 2.5-6 2.5 6M6 9l6 1.5L18 9M12 10.5V14"/></svg></div><div><h4>Tracking on the box</h4><p>Camera + MediaPipe run on the CM5 itself, ~12 poses a second.</p></div></div>
+  <div class="sum k-ai"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg></div><div><h4>Server for plans &amp; voice</h4><p>Workout, media and Bunny's thinking come from the server.</p></div></div>
+  <div class="sum k-save"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></div><div><h4>Offline-safe</h4><p>Every rep saved on the board first, synced after each exercise.</p></div></div>
+  <div class="sum k-gate"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div><div><h4>Hands-free</h4><p>Arm gesture to navigate, "Hey Bunny" to talk.</p></div></div>
+</div><div class="layout">
+<div class="board" data-r="board">
+  <svg class="wires" data-r="wires" aria-hidden="true"></svg>
+  <div class="grid"><div class="sec">1 · Power on</div><div class="col1"><button class="node k-start" type="button" data-k="c_boot" data-kind="k-start" data-icon="power"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg></span><span class="tx"><span class="t">Boot &amp; self-update</span><span class="s">systemd, fast-forward to production</span></span></button></div><div class="col2"><button class="node k-start" type="button" data-k="c_runpy" data-kind="k-start" data-icon="terminal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg></span><span class="tx"><span class="t">run.py</span><span class="s">Logs, pinned packages</span></span></button></div><div class="col3"><button class="node k-start" type="button" data-k="c_display" data-kind="k-start" data-icon="monitor"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><span class="tx"><span class="t">Screen &amp; window</span><span class="s">1080p, fullscreen Qt</span></span></button></div><div class="col3"><button class="node k-srv" type="button" data-k="c_health" data-kind="k-srv" data-icon="activity"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><span class="tx"><span class="t">Device health</span><span class="s">Camera · mic · speaker chips</span></span></button></div><div class="sec">2 · Pairing &amp; data from the server</div><div class="col1"><button class="node k-gate" type="button" data-k="c_pair" data-kind="k-gate" data-icon="bluetooth"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg></span><span class="tx"><span class="t">Pair from the phone</span><span class="s">Bluetooth: account + Wi-Fi</span></span></button></div><div class="col2"><button class="node k-gate" type="button" data-k="c_identity" data-kind="k-gate" data-icon="key"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg></span><span class="tx"><span class="t">Identity &amp; sign-in</span><span class="s">Kiosk token on the board</span></span></button></div><div class="col3"><button class="node k-ai" type="button" data-k="c_workout" data-kind="k-ai" data-icon="download"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></span><span class="tx"><span class="t">Today's workout</span><span class="s">GET …/cm5/workout</span></span></button></div><div class="col1"><button class="node k-ai" type="button" data-k="c_phrases" data-kind="k-ai" data-icon="music"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span><span class="tx"><span class="t">Bunny's phrases</span><span class="s">Recorded voice lines</span></span></button></div><div class="col2"><button class="node k-ai" type="button" data-k="c_media" data-kind="k-ai" data-icon="download"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></span><span class="tx"><span class="t">Media download</span><span class="s">Images, demos, cues, videos</span></span></button></div><div class="col3"><button class="node k-srv" type="button" data-k="c_valid" data-kind="k-srv" data-icon="check"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span class="tx"><span class="t">Checks</span><span class="s">Complete? rest day? grey cards</span></span></button></div><div class="sec">3 · On the TV</div><div class="col2"><button class="node k-save" type="button" data-k="c_screens" data-kind="k-save" data-icon="layout"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span><span class="tx"><span class="t">Screens</span><span class="s">Logo → intro → greeting → home</span></span></button></div><div class="col1"><button class="node k-save" type="button" data-k="c_gesture" data-kind="k-save" data-icon="hand"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span><span class="tx"><span class="t">Arm gesture</span><span class="s">Right arm out, hold 0.6 s</span></span></button></div><div class="col2"><button class="node k-save" type="button" data-k="c_dashboard" data-kind="k-save" data-icon="monitor"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><span class="tx"><span class="t">Dashboard</span><span class="s">Cards, hero video, grey cards</span></span></button></div><div class="col2"><button class="node k-save" type="button" data-k="c_launch" data-kind="k-save" data-icon="rocket"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg></span><span class="tx"><span class="t">Start the tracker</span><span class="s">Separate process per exercise</span></span></button></div><div class="loopbox"><span class="badge">↻ Every camera frame (about 12 a second)</span><div class="grid"><div class="col2"><button class="node k-ex" type="button" data-k="c_camera" data-kind="k-ex" data-icon="camera"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span><span class="tx"><span class="t">Camera</span><span class="s">1080p · 30 fps · newest frame</span></span></button></div><div class="col2"><button class="node k-ai" type="button" data-k="c_pose" data-kind="k-ai" data-icon="person"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="m9.5 20 2.5-6 2.5 6M6 9l6 1.5L18 9M12 10.5V14"/></svg></span><span class="tx"><span class="t">MediaPipe pose</span><span class="s">33 points · ~82 ms · ~12/s</span></span></button></div><div class="col2"><button class="node k-ex" type="button" data-k="c_filter" data-kind="k-ex" data-icon="waves"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg></span><span class="tx"><span class="t">Smoothing &amp; visibility</span><span class="s">Count only what is seen</span></span></button></div><div class="col1"><button class="node k-food" type="button" data-k="c_reps" data-kind="k-food" data-icon="repeat"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span class="tx"><span class="t">Rep counter</span><span class="s">Down 100° → up 155° (squat)</span></span></button></div><div class="col3"><button class="node k-food" type="button" data-k="c_form" data-kind="k-food" data-icon="ruler"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></svg></span><span class="tx"><span class="t">Form rules</span><span class="s">Phase · vote · camera angle</span></span></button></div><div class="col2"><button class="node k-save" type="button" data-k="c_hud" data-kind="k-save" data-icon="eye"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="tx"><span class="t">What you see</span><span class="s">Coloured skeleton, count, cue pills</span></span></button></div><div class="col1"><button class="node k-gate" type="button" data-k="c_fatigue" data-kind="k-gate" data-icon="battery"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M6 11v2"/></svg></span><span class="tx"><span class="t">How you are doing</span><span class="s">Slower or smaller reps</span></span></button></div><div class="col3"><button class="node k-ai" type="button" data-k="c_cues" data-kind="k-ai" data-icon="volume"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span><span class="tx"><span class="t">Voice cues &amp; sounds</span><span class="s">Rate-limited tips, rep numbers</span></span></button></div></div></div><div class="sec">4 · Sets and results</div><div class="col2"><button class="node k-srv" type="button" data-k="c_sets" data-kind="k-srv" data-icon="timer"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></svg></span><span class="tx"><span class="t">Demo, sets &amp; rest</span><span class="s">Countdown between sets</span></span></button></div><div class="col1"><button class="node k-save" type="button" data-k="c_live" data-kind="k-save" data-icon="database"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></span><span class="tx"><span class="t">Saved on the board</span><span class="s">Every rep → live.db</span></span></button></div><div class="col2"><button class="node k-save" type="button" data-k="c_report" data-kind="k-save" data-icon="file"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span><span class="tx"><span class="t">Report</span><span class="s">Per exercise, then final summary</span></span></button></div><div class="col1"><button class="node k-srv" type="button" data-k="c_sync" data-kind="k-srv" data-icon="cloud"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m9 14 2 2 4-4"/></svg></span><span class="tx"><span class="t">Cloud sync</span><span class="s">After each exercise, via outbox</span></span></button></div><div class="sec">5 · Bunny voice (runs alongside)</div><div class="col1"><button class="node k-ex" type="button" data-k="c_wake" data-kind="k-ex" data-icon="mic"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></span><span class="tx"><span class="t">"Hey Bunny"</span><span class="s">Wake word &amp; listening</span></span></button></div><div class="col2"><button class="node k-ai" type="button" data-k="c_brain" data-kind="k-ai" data-icon="server"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg></span><span class="tx"><span class="t">Server does the thinking</span><span class="s">Speech → AI → voice</span></span></button></div><div class="col3"><button class="node k-ex" type="button" data-k="c_modes" data-kind="k-ex" data-icon="chat"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg></span><span class="tx"><span class="t">Modes &amp; check-ins</span><span class="s">Pause, or ask while you move</span></span></button></div><div class="sec">6 · Debug and speed</div><div class="col1"><button class="node k-srv" type="button" data-k="c_debug" data-kind="k-srv" data-icon="bug"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="6" width="8" height="14" rx="4"/><path d="m19 7-3 2M5 7l3 2M19 19l-3-2M5 19l3-2M20 13h-4M4 13h4M10 4l1 2M14 4l-1 2"/></svg></span><span class="tx"><span class="t">Recordings &amp; logs</span><span class="s">Replay sessions offline</span></span></button></div><div class="col3"><button class="node k-srv" type="button" data-k="c_perf" data-kind="k-srv" data-icon="cpu"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></span><span class="tx"><span class="t">Why it is built this way</span><span class="s">No H.264 decoder, bandwidth</span></span></button></div></div>
 </div>
-
+<aside>
+  <div class="panel" data-r="panel" aria-live="polite">
+    <div class="ph"><div class="ic" data-r="pic"></div><div><span class="tag" data-r="ptag"></span><h3 data-r="ptitle"></h3></div></div>
+    <div class="pb">
+      <p class="plain" data-r="pplain"></p>
+      <div class="eg"><div class="h"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="m9.5 20 2.5-6 2.5 6M6 9l6 1.5L18 9M12 10.5V14"/></svg> In Asha's squat set</div><p data-r="pex"></p></div>
+      <div class="rules"><h5>Exact rules</h5><ul data-r="prules"></ul><span class="file" data-r="pfile"></span></div>
+    </div>
+    <div class="nav"><button class="btn" data-r="prev" type="button">← Previous</button><button class="btn" data-r="next" type="button">Next →</button></div>
+  </div>
+  <div class="panel" style="margin-top:16px;padding:18px 22px">
+    <div style="font-weight:650;margin-bottom:2px">The device</div>
+    <div style="color:var(--muted);font-size:13.5px">Raspberry Pi Compute Module 5 on top of the TV: camera, mic, HDMI to the TV.</div>
+    <div class="persona"><span class="chip">4× Cortex-A76</span><span class="chip">4 GB RAM</span><span class="chip">camera 1080p30</span><span class="chip">MediaPipe 0.10.18</span><span class="chip">PyQt6 UI</span><span class="chip">11 tracked exercises</span></div>
+  </div>
+</aside>
+</div>
+<footer>Traced from burnmate_cm5 (development = production, commit d58ef36, 28 Oct 2026). Update this tab whenever the CM5 tracking or kiosk flow changes.</footer></section>
+</div>
 <script>
+const PLAN = (() => {
 const D = {
   trigger_app: { tag: 'Start', title: 'App asks for a plan', items: [
     '<code>POST /users/{user_id}/plan</code> with the full profile (body, health, preferences, goals).',
@@ -425,64 +461,330 @@ const EDGES = [
   ["save","after"],["save","parts","next part","loop"]
 ];
 
-const nodes=[...document.querySelectorAll('.node')];
-const byKey=Object.fromEntries([...document.querySelectorAll('[data-k]')].map(n=>[n.dataset.k,n]));
-const board=document.getElementById('board'), wires=document.getElementById('wires');
-function box(el){const b=board.getBoundingClientRect(),r=el.getBoundingClientRect();
-  return {l:r.left-b.left,r:r.right-b.left,t:r.top-b.top,b:r.bottom-b.top,cx:(r.left+r.right)/2-b.left,cy:(r.top+r.bottom)/2-b.top};}
-function rounded(pts,rad){let d=`M${pts[0][0]} ${pts[0][1]}`;
-  for(let i=1;i<pts.length-1;i++){const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
-    const r1=Math.min(rad,Math.hypot(x1-x0,y1-y0)/2,Math.hypot(x2-x1,y2-y1)/2);
-    const ax=x1-Math.sign(x1-x0)*r1, ay=y1-Math.sign(y1-y0)*r1, bx=x1+Math.sign(x2-x1)*r1, by=y1+Math.sign(y2-y1)*r1;
-    d+=` L${ax} ${ay} Q${x1} ${y1} ${bx} ${by}`;}
-  const l=pts[pts.length-1]; return d+` L${l[0]} ${l[1]}`;}
-function draw(){
-  [...wires.querySelectorAll('path.wire,text')].forEach(e=>e.remove());
-  if(getComputedStyle(wires).display==='none') return;
-  const W=board.clientWidth;
-  EDGES.forEach(([a,b,label,kind])=>{
-    const A=byKey[a],B=byKey[b]; if(!A||!B) return;
-    const p=box(A),q=box(B); let pts, lx, ly;
-    if(kind==='back'||kind==='loop'){
-      const side = kind==='loop' ? Math.min(W-8, Math.max(p.r,q.r)+ (kind==='loop'?34:22)) : Math.max(p.r,q.r)+22;
-      if(a==='grade'&&b==='repair'){ pts=[[p.r,p.cy],[q.l,q.cy]]; lx=p.r+2; ly=p.cy-9; }
-      else if(a==='repair'){ const x=p.r+14; pts=[[p.r,p.cy],[x,p.cy],[x,q.cy],[q.r,q.cy]]; lx=q.r+12; ly=q.cy-9; }
-      else { pts=[[p.r,p.cy],[W-12,p.cy],[W-12,q.cy],[q.r,q.cy]]; lx=W-20; ly=p.cy-9; }
-    } else if(Math.abs(p.cx-q.cx)<4){ pts=[[p.cx,p.b],[q.cx,q.t]]; }
-    else { const gap=q.t-p.b, my = gap>110 ? q.t-18 : p.b+gap/2; pts=[[p.cx,p.b],[p.cx,my],[q.cx,my],[q.cx,q.t]];
-      if(q.t<p.b){ pts=[[p.cx,p.b],[p.cx,p.b+14],[q.cx,p.b+14],[q.cx,q.t]]; } }
-    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d',rounded(pts,10)); path.setAttribute('class','wire'+(kind?' '+kind:''));
-    path.setAttribute('marker-end',`url(#${kind==='back'?'ahr':kind==='loop'?'ahb':'ah'})`); wires.appendChild(path);
-    if(label){const t=document.createElementNS('http://www.w3.org/2000/svg','text');
-      const last=pts[pts.length-1], first=pts[0];
-      const x=lx??(first[0]+8), y=ly??((first[1]+last[1])/2);
-      t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('class','wlabel'+(kind?' '+kind:''));
-      if(kind==='loop'){t.setAttribute('text-anchor','end');}
-      t.textContent=label; wires.appendChild(t);}
-  });
+
+return { D, PLAIN, EX, EDGES };
+})();
+const CM5 = (() => {
+const D = {
+  c_boot: { tag: 'Power on', title: 'Boot and self-update', items: [
+    'systemd <code>burnmate-kiosk.service</code> runs <code>startx start_burnmate.sh</code> on tty1 (restart on failure after 2 s). A lock file keeps one copy running.',
+    'Fast boot: slow services masked, quiet kernel, <code>.pyc</code> precompiled, libmpv / OpenCV / MediaPipe pre-loaded into the page cache. Bluetooth stays on for pairing.',
+    'The launcher pins branch <code>production</code> (or <code>BURNMATE_BRANCH</code>): <code>git fetch</code> (25 s cap) + <b>fast-forward only</b>, only when the tree is clean; recordings are set aside and restored. Any failure → runs the local copy.',
+    'A Plymouth splash covers boot until the app paints its first frame.',
+  ], file: 'kiosk/install_systemd_kiosk.sh · kiosk/install_fast_boot.sh · start_burnmate.sh' },
+  c_runpy: { tag: 'Power on', title: 'run.py: logs and dependencies', items: [
+    'Everything printed is also written to <code>recordings/latest_terminal_log.txt</code> (20 MB cap; the previous run kept as <code>prev_</code>).',
+    'Missing packages installed once: apt (libmpv, PortAudio, PyQt6, Picamera2, Indic fonts) and pip pinned to <code>requirements-cm5.lock</code> (numpy 1.26.4, OpenCV 4.11, MediaPipe 0.10.18, openWakeWord 0.6.0…). Never upgrades.',
+    'One <code>[deps]</code> log line says whether installed versions match the lock.',
+  ], file: 'run.py · fitness_trainer/boot/terminal_log.py' },
+  c_display: { tag: 'Power on', title: 'Screen and app window', items: [
+    'Output pinned to 1080p (or the largest mode that fits); smaller TVs get a Qt scale factor 0.5–1.0.',
+    'Frameless, always-on-top, fullscreen Qt window. Media download starts in the background.',
+  ], file: 'fitness_trainer/main.py · boot/screen_scaling.py · app/screen_manager.py' },
+  c_health: { tag: 'Power on', title: 'Device health chips', items: [
+    '<b>Camera</b> is OK only when frames actually arrive (phantom <code>/dev/video*</code> devices are ignored).',
+    '<b>Mic</b> and <b>speaker</b> via PulseAudio / ALSA; HDMI-to-TV counts as a speaker when a display is connected.',
+    'Each check has a 1.8–3.5 s timeout; results are chips on the dashboard, refreshed on a timer.',
+  ], file: 'fitness_trainer/boot/health_check.py' },
+  c_pair: { tag: 'Pairing', title: 'Bluetooth pairing from the phone', items: [
+    'A BLE GATT service (BlueZ, separate process): the phone writes JSON to <code>…fe11</code>, the board answers on <code>…fe12</code>.',
+    '<code>hello</code> → device id and "BurnMate XXXX"; <code>scan</code> → Wi-Fi networks; pairing sends the kiosk token, user, name, photo and Wi-Fi password.',
+    'The board joins Wi-Fi with <code>nmcli</code> before saving the token (must start <code>bmk_</code>).',
+    'Advertises for 600 s after boot when unpaired; a paired board offline offers Wi-Fi-only changes for 24 h, to its own user only. No PIN: security is proximity.',
+  ], file: 'fitness_trainer/api/ble_gatt.py · ble_pairing.py · pairing_service.py' },
+  c_identity: { tag: 'Pairing', title: 'Identity and sign-in', items: [
+    '<code>device_identity.json</code>: permanent device id, kiosk token, user id, name, photo. Written atomically.',
+    'Every request: <code>Authorization: Bearer &lt;kiosk token&gt;</code>, <code>X-Device-Uid</code>, <code>User-Agent: BurnMate-CM5/1.0</code>.',
+    '<b>401/403</b> → token cleared, pairing screen on next start. Timeouts and 5xx never unpair.',
+  ], file: 'fitness_trainer/api/kiosk_identity.py · workout_api.py' },
+  c_workout: { tag: 'From the server', title: "Today's workout", items: [
+    '<code>GET /api/v1/users/{id}/cm5/workout</code> on <code>api.burnmate.fit</code> (2.5 s timeout), fetched again every time the dashboard opens.',
+    'Uses: rest day, plan day, plan id, and per exercise: name, slug, sets (reps per set), target reps, <b>tracker_config</b>, image and video links, <code>available</code>.',
+    '<code>active_session.workout_checklist</code> resumes progress made earlier today.',
+    'Also <code>GET …/cm5/profile</code> (name, goal, health, language), cached 5 min for Bunny.',
+  ], file: 'fitness_trainer/api/workout_api.py · _try_cloud, fetch_profile' },
+  c_valid: { tag: 'From the server', title: 'Checks before showing it', items: [
+    'Every tracked exercise needs positive sets and a <code>tracker_config</code>; games need a game module; <b>grey (unavailable)</b> entries need nothing.',
+    'Any failure (offline, HTTP error, bad data) → "WORKOUT UNAVAILABLE" with the reason. Never a silent fallback to old data.',
+    'Rest day → "Day N · REST DAY", no cards.',
+  ], file: 'fitness_trainer/api/workout_api.py · _valid, is_unavailable' },
+  c_media: { tag: 'From the server', title: 'Media download', items: [
+    '<code>GET /media/manifest</code> → every file with its sha1. Only the 11 tracked exercises are downloaded to <code>~/.burnmate/media/exercises/&lt;slug&gt;/</code>.',
+    'Card images, demo video + audio, voice cues and the hero video; checked by sha1, files the server dropped are deleted.',
+    'Order: today\'s plan first, next exercise first; images before videos. 4 workers; retries after 30 s, doubling to 10 min.',
+    'Voice clips as Opus <code>.ogg</code> (1/16 the size) when the board can play it, else WAV. A missing clip just means silence.',
+  ], file: 'fitness_trainer/api/media_sync.py · media_cache.py' },
+  c_phrases: { tag: 'From the server', title: "Bunny's recorded phrases", items: [
+    '<code>GET /api/v1/bunny/phrases?lang=</code>: English and Telugu motivation lines, questions, replies and the ting / blip / close sounds.',
+    'Downloaded and sha1-checked into <code>~/.burnmate/media/phrases/&lt;lang&gt;/</code>. Nothing is generated during a set.',
+  ], file: 'fitness_trainer/voice/phrases.py' },
+  c_screens: { tag: 'On the TV', title: 'Screens', items: [
+    '0 Logo · 1 Greeting · 2 Dashboard · 4 Exercise · 5 Report · 6 Game · 7 Gesture intro · 8 Pairing.',
+    'Logo waits for the first camera frame (1.8–5 s) → gesture intro (hold the arm 1 s) → greeting (5 s) → dashboard. 220 ms cross-fades.',
+    'Not paired → pairing screen; paired but offline → waits for Wi-Fi.',
+  ], file: 'fitness_trainer/app/screen_manager.py · _create_screens, go_to' },
+  c_gesture: { tag: 'On the TV', title: 'Arm gesture (hands-free control)', items: [
+    'App camera: Picamera2 1280×720 + a 320×240 preview stream, 30 fps. MediaPipe Pose <b>lite</b> on the centre 60% of the frame (ignores people at the edges), every 80 ms.',
+    'Gesture = right arm held out to the side at shoulder height (wrist past the shoulder by more than shoulder width), all joints visible ≥ 0.4.',
+    'Hold <b>0.6 s</b> to trigger, shown as "START &gt;&gt; 63%"; 1.2 s cooldown; locked for 1 s after a screen change.',
+    'Remote/keyboard: → next/start, ← back, Enter confirm, Esc stops Bunny or quits.',
+  ], file: 'fitness_trainer/app/handwave_control.py · camera/shared_camera.py' },
+  c_dashboard: { tag: 'On the TV', title: 'Dashboard', items: [
+    '"Namaste &lt;name&gt;", avatar, weekly score graph (this week, from local history) and "N/7 active · streak".',
+    'Carousel of 3 cards; the first unfinished exercise in the centre. <b>Grey cards</b> (no tracker yet) come after the real ones; raising the arm on one says it isn\'t available and moves on.',
+    'Hero video decoded <b>once into RAM</b> and looped at 30 Hz, because this board has no hardware H.264 decoder.',
+    'On show: saves the plan to <code>live.db</code>, sets media priority, sends queued results, schedules Bunny\'s check-in after 3.5 s.',
+  ], file: 'fitness_trainer/screens/workout_dashboard.py · widgets/hero_video.py' },
+  c_launch: { tag: 'On the TV', title: 'Start the tracker process', items: [
+    'Shows "Loading…" (MediaPipe\'s first start can take 30–60 s), releases the app camera, then spawns the tracker as a <b>separate process</b> (spawn, not fork: libcamera, MediaPipe and Qt are not fork-safe).',
+    'Passes the tracker config, sets, rest seconds, Bunny phrases and where to resume (set and rep).',
+    'Talks over queues/events: results, stop, Bunny hold/mute, rest/resume. Polled every 200 ms.',
+    'Teardown: SIGTERM → 6 s → SIGKILL, then the whole process group (no leftover audio).',
+  ], file: 'fitness_trainer/screens/exercise_launcher.py · _launch, _stop_process' },
+  c_camera: { tag: 'Every frame', title: 'Camera', items: [
+    'Tracker\'s own Picamera2: 1920×1080 at 30 fps, newest frame only (<code>queue=False</code>), plus a 1280×720 stream scaled by the ISP for the model.',
+    'Short exposure, auto-exposure on. Falls back to OpenCV cameras if Picamera2 fails.',
+    'A grabber thread keeps only the newest frame and feeds the pose worker.',
+  ], file: 'exercise_tracker/services/camera_pose_reader.py · frame_grabber.py' },
+  c_pose: { tag: 'Every frame', title: 'MediaPipe pose', items: [
+    'MediaPipe Pose, <b>full</b> model (complexity 1; lite = 0; heavy runs at ~3 fps and must not ship). 33 body landmarks with visibility.',
+    'Runs on a "pose-worker" thread in the tracker process: about <b>82 ms</b> per frame on one Cortex-A76 core → <b>11–13 poses a second</b>.',
+    'Input 1280 px wide (detector 224 px, landmarker 256 px). XNNPACK 1 thread.',
+  ], file: 'exercise_tracker/services/camera_pose_reader.py · PosePipeline · pose_threads.py' },
+  c_filter: { tag: 'Every frame', title: 'Smoothing and visibility', items: [
+    'The <b>drawn</b> skeleton is smoothed (One-Euro filter) and drawn slightly ahead; measurements are never smoothed by it.',
+    'Angles corrected for the 16:9 frame and for body turn; depth uses a 3-frame median; a one-frame extreme counts only if a "witness" agrees (squat: hips at ≤ 0.55 of standing height) and it\'s reachable at ≤ 300°/s.',
+    'Counting joints need visibility ≥ 0.65; a rep counts only if one whole side was seen. 10 poor frames reset the rep; 2 s without the body → counter unarmed.',
+  ], file: 'exercise_tracker/main_tracker.py · _peak_filter, _one_euro, _rep_if_seen' },
+  c_reps: { tag: 'Every frame', title: 'Rep counter', items: [
+    'Driven by the server\'s <code>tracker_config</code>: joints (squat: hip–knee–ankle), <b>down 100°</b> / <b>up 155°</b>, slack, confirmation frames.',
+    'Starts <b>unarmed</b>; arms after 2 frames in the start position.',
+    '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side.',
+  ], file: 'exercise_tracker/main_tracker.py · data/exercise_configs/*.json' },
+  c_form: { tag: 'Every frame', title: 'Form rules', items: [
+    'Each rule (trunk lean, heel lift, knee track, neck line, frame fill…) is judged only in its phase: top &lt; 30%, mid ≥ 30%, bottom ≥ 70% of depth.',
+    'Vote over 0.4 s: ≥ 2 frames and ≥ 70% must agree before a fault counts.',
+    'Camera view matters: squat expects a 45° diagonal; rules the camera can\'t really see from this angle are skipped.',
+    'Personal references learned while you stand still: flat heels, neutral neck, your stance width.',
+  ], file: 'exercise_tracker/form_check/engine_rule_checker.py · measure_body_angles.py' },
+  c_hud: { tag: 'Every frame', title: 'What you see on the TV', items: [
+    'Skeleton colours: <b>red</b> blocking or uncorrected fault · <b>amber</b> warning or imperfect rep · <b>grey</b> not visible · <b>green</b> good at the target · white otherwise.',
+    'Rep counter, set progress and up to 2 cue pills (current and previous, 0.6 s fade).',
+    'Rep score = 100 − fault weights (blocking fault −45, default −10).',
+    'Shown at up to <b>15 fps</b> (kept low for heat and memory bandwidth); skeleton trails the video by ~130–190 ms.',
+  ], file: 'exercise_tracker/display/* · session_summary/rep_score.py' },
+  c_cues: { tag: 'Every frame', title: 'Voice cues and sounds', items: [
+    'Rep numbers spoken from <code>1.wav…15.wav</code>; form cues from the exercise\'s feedback clips; one shared playback lock so they never overlap.',
+    'Rate limit: first cue at once, again after 2.5 s, then every 3 s while the fault lasts; reset after 6 s fixed. Each rule has a lifetime cap.',
+    '3+ faults at once → one card: "Please correct your posture" + up to 3 short lines. Amber cues must last 1.2 s before they are spoken.',
+    '"Rep not counted" when a rep was rejected. No beeps: the ting / blip / close are Bunny\'s sounds.',
+  ], file: 'form_check/cue_picker.py · services/voice_player.py' },
+  c_fatigue: { tag: 'Every frame', title: 'How you are doing (fatigue)', items: [
+    'Each rep compared with your own baseline (median of reps 2–4).',
+    'Challenged (1.2× slower) · Fatigued (1.25×, form −10, range &lt; 90%) · Struggling (1.5×, range &lt; 80%, or 2 of 3 reps rejected) · Possible discomfort (one rep 1.6× slower, or left/right gap doubled) · Inactive (10 s still).',
+    'Must repeat for 2 reps. Challenged/Fatigued → a card + a recorded Bunny line (max 3 per set, 30 s apart). Struggling/discomfort → encouragement, then Bunny asks how you feel.',
+  ], file: 'exercise_tracker/fatigue.py · screens/exercise_launcher.py' },
+  c_sets: { tag: 'Sets', title: 'Demo, sets and rest', items: [
+    'Demo video (<code>demo.mp4</code> + <code>demo.wav</code>) full screen first; tracking waits. Then the stance card ("Stand at about 45°…") → "Good stance. Start your exercise."',
+    'After each set: "SET k DONE", then a REST countdown of <code>rest_seconds</code> with "NEXT: SET k OF n". → skips rest; Bunny pauses it.',
+    'Last set → "COMPLETED!" and the tracker process exits. Done = target reached, or ended with next / stopped for fatigue or discomfort.',
+  ], file: 'exercise_tracker/demo_video_player.py · main_tracker.py · exercise_launcher.py' },
+  c_live: { tag: 'Results', title: 'Saved on the board first', items: [
+    '<code>~/.burnmate/live.db</code> (SQLite, WAL, synchronous FULL), 14 days kept.',
+    '<b>Every counted rep</b> written at once with its faults, score, duration, range and asymmetry. Nothing is sent per rep.',
+    'Bunny reads it for context ("you did 12 squats today").',
+  ], file: 'fitness_trainer/storage/live_session.py' },
+  c_report: { tag: 'Results', title: 'Report screen', items: [
+    'Per-exercise stats with a 30 s countdown; arm gesture or → skips. Returns to the dashboard, which centres the next unfinished exercise.',
+    'After the last exercise: final summary → saved to local history, "workout completed" queued, Bunny\'s end-of-workout check-in. The gesture then shuts the app down.',
+  ], file: 'fitness_trainer/screens/report_screen.py' },
+  c_sync: { tag: 'Results', title: 'Cloud sync (outbox)', items: [
+    'When an exercise ends, two items go into the outbox: <code>POST …/cm5/session/activity</code> (plan, duration, reps, average form score, checklist) and <code>POST …/cm5/events</code> (completed / skipped).',
+    'Sent in the background; stops at the first failure and retries on the next dashboard. Only today\'s items are sent.',
+    'This is what the phone app shows as "workout done".',
+  ], file: 'fitness_trainer/storage/live_session.py · api/workout_api.py' },
+  c_wake: { tag: 'Bunny voice', title: 'Wake word and listening', items: [
+    'Mic 16 kHz mono in 80 ms chunks (skips HDMI, which has no input). "Hey Bunny" = openWakeWord model, threshold 0.5.',
+    'End of speech: Silero VAD + loudness (2.5× the room level). Limits: "hey Bunny" 8 s, a question during a set 5 s, check-in 15 s.',
+  ], file: 'fitness_trainer/voice/wake_word.py · speech_detect.py · assistant.py' },
+  c_brain: { tag: 'Bunny voice', title: 'Speech → AI → voice (on the server)', items: [
+    'The board only records and plays; no AI keys on it. <code>POST …/bunny/respond</code> with the audio, today\'s workout context and the last 12 turns.',
+    'Server: speech-to-text, the AI reply and text-to-speech (Sarvam + Gemini per the README). Returns transcript, reply text, reply audio and an action.',
+    'Timeouts 12 s during a set, 25 s otherwise; offline → the recorded "offline" phrase.',
+  ], file: 'fitness_trainer/voice/bunny_client.py · assistant.py' },
+  c_modes: { tag: 'Bunny voice', title: 'Modes and check-ins', items: [
+    '<b>Full mode</b> ("hey Bunny", check-ins): the exercise pauses, a bubble shows Listening → Thinking → Speaking with subtitles.',
+    '<b>Soft mode</b> (questions during a set): counting continues, only the coach voice is muted.',
+    'Answers become actions: continue, rest 20–60 s (30 default), or stop. Pain stops the exercise for today. Check-ins at the first dashboard of the day and at the final summary, until answered.',
+  ], file: 'fitness_trainer/voice/bunny.py · exercise_launcher.py · on_bunny_action' },
+  c_debug: { tag: 'Debug', title: 'Recordings and logs', items: [
+    '<code>FITNESS_RECORD=1</code>: every frame\'s 33 landmarks (~1 MB/min), events, summary and log per exercise into <code>recordings/</code>; fault snapshots as images.',
+    '<code>devtools/replay_session.py</code> replays a recording through the real form engine.',
+    'Log tags: <code>[pose] [rep] [state] [bunny] [live] [media] [deps]</code>. <code>FITNESS_DEBUG_HUD</code> overlays FPS, inference time, temperature and CPU.',
+  ], file: 'exercise_tracker/main_tracker.py · recordings/README.md' },
+  c_perf: { tag: 'Debug', title: 'Why it is built this way', items: [
+    '<b>No hardware H.264 decoder</b> on this chip → videos decoded once into RAM, demos decoded in software.',
+    '<b>Memory bandwidth</b> (~17 GB/s shared) runs out before the CPU does → display capped at 15 fps; at 30 fps it ran 7 °C hotter and inference slowed 82 → 88 ms.',
+    'MediaPipe uses one core (~82 ms); tracker and games run as separate processes and the camera is handed between them.',
+  ], file: 'exercise_tracking_docs/hardware · main_tracker.py' },
+};
+const PLAIN = {
+  c_boot: 'When the TV box is switched on it starts the BurnMate app by itself and quietly updates to the latest released version.',
+  c_runpy: 'The app checks it has everything it needs and keeps a log of everything it does.',
+  c_display: 'The picture is set to fit the TV and the app fills the screen.',
+  c_health: 'Small chips on the home screen show whether the camera, mic and speaker are working.',
+  c_pair: 'The phone app connects to the box over Bluetooth, gives it Wi-Fi and your account — no codes to type.',
+  c_identity: 'The box remembers who it belongs to; if the account removes it, it asks to pair again.',
+  c_workout: "Each time the home screen opens, the box asks the server for today's workout.",
+  c_valid: 'It checks the workout is complete before showing it; if not, it says so instead of guessing.',
+  c_media: 'Exercise pictures, demo videos and voice cues are downloaded ahead of time so the workout never waits.',
+  c_phrases: "Bunny's voice lines are downloaded too, so it can talk instantly during a set.",
+  c_screens: 'Logo, a short gesture lesson, a greeting, then the home screen.',
+  c_gesture: 'You control everything by holding your right arm out to the side — no remote needed.',
+  c_dashboard: "Today's exercises as cards; the next one is in the middle with a video behind it.",
+  c_launch: 'Starting an exercise opens a separate tracking program so the heavy work never freezes the screen.',
+  c_camera: 'The camera sends a fresh picture many times a second; old pictures are thrown away.',
+  c_pose: 'MediaPipe finds 33 points on your body in each picture — shoulders, hips, knees, ankles and more.',
+  c_filter: 'The points are cleaned up, and nothing is counted unless your body is clearly visible.',
+  c_reps: 'Joint angles tell when you go down and come back up — that is one rep.',
+  c_form: 'Rules check your posture at the right moment of each rep, like knees too far forward at the bottom.',
+  c_hud: 'You see your skeleton in colour — green good, amber careful, red fix it — with the rep count.',
+  c_cues: 'Short spoken tips and rep numbers, spaced out so it never nags.',
+  c_fatigue: 'If reps get much slower or smaller than your own normal, it encourages you or asks how you feel.',
+  c_sets: 'A demo first, then sets with a rest countdown between them.',
+  c_live: 'Every rep is saved on the box straight away, so nothing is lost if the internet drops.',
+  c_report: 'A summary after each exercise, and a full summary at the end of the workout.',
+  c_sync: 'Results are sent to the server after each exercise, so the phone shows the workout as done.',
+  c_wake: 'Say "Hey Bunny" and the box starts listening.',
+  c_brain: 'Your voice is sent to the server, which understands it, writes a reply and speaks it back.',
+  c_modes: 'Bunny can pause the workout to talk, or just ask a quick question while you keep going.',
+  c_debug: 'Sessions can be recorded and replayed to tune the tracking.',
+  c_perf: 'The small board has limits, and the app is designed around them.',
+};
+const EX = {
+  c_boot: 'Asha switches on the TV at 7 am; the box boots and fast-forwards to the latest production code.',
+  c_runpy: 'All packages already installed — the [deps] line says versions match.',
+  c_display: 'Her 1080p TV needs no scaling.',
+  c_health: 'Camera ✓, mic ✓, speaker (HDMI) ✓ on the home screen.',
+  c_pair: 'Done once, the day she set it up from her phone.',
+  c_identity: 'Already paired; the box signs in with its kiosk token.',
+  c_workout: "Wednesday: Squat 3 × 10, Knee Push-up 3 × 8, plus two grey cards (no tracker yet).",
+  c_valid: 'Squat and push-up have tracker configs ✓; the grey ones skip the check.',
+  c_media: 'Squat images, demo and cues were already downloaded overnight.',
+  c_phrases: 'English phrases ready.',
+  c_screens: 'Logo → gesture intro → "Namaste Asha" → home.',
+  c_gesture: 'She holds her right arm out: START 0% → 100% in 0.6 s.',
+  c_dashboard: 'Squat card in the centre with its video looping behind it.',
+  c_launch: '"Loading…" for a few seconds, then the squat demo starts.',
+  c_camera: '1080p at 30 fps; the model gets a 1280 px frame.',
+  c_pose: 'About 12 poses a second; hips, knees and ankles found clearly.',
+  c_filter: 'She stands at 45°, whole left side visible → counting allowed.',
+  c_reps: 'Knee angle 170° → 95° (down) → 160° (up) = rep 1.',
+  c_form: 'At the bottom her heels lift on rep 4 → "heel lift" fault after the 0.4 s vote.',
+  c_hud: 'Her feet turn red; counter shows 4/10.',
+  c_cues: '"Keep your heels down" once; repeated 2.5 s later only if it continues.',
+  c_fatigue: 'Rep 9 is 1.3× slower than her reps 2–4 → "Challenged" card and a Bunny line.',
+  c_sets: 'Set 1 done → 15 s rest countdown → set 2.',
+  c_live: '30 reps saved with scores as they happen.',
+  c_report: 'Squat: 30 reps, form 86% → back home, push-ups next.',
+  c_sync: 'Activity + "completed" event sent; her phone shows the squat as done.',
+  c_wake: 'Between exercises she says "Hey Bunny".',
+  c_brain: '"How many squats did I do?" → "30 squats today, great work!"',
+  c_modes: 'Mid-set Bunny asks "Feeling okay?"; she keeps going → counts as "continue".',
+  c_debug: 'Not recording today.',
+  c_perf: 'Screen at 15 fps keeps the box cool through the workout.',
+};
+const EDGES = [
+  ['c_boot','c_runpy'],['c_runpy','c_display'],['c_display','c_health'],
+  ['c_health','c_pair'],['c_pair','c_identity'],['c_identity','c_workout'],
+  ['c_workout','c_valid'],['c_identity','c_media'],['c_identity','c_phrases'],
+  ['c_valid','c_screens'],['c_media','c_screens'],
+  ['c_screens','c_dashboard'],['c_gesture','c_dashboard'],['c_dashboard','c_launch'],
+  ['c_launch','c_camera'],['c_camera','c_pose'],['c_pose','c_filter'],
+  ['c_filter','c_reps'],['c_filter','c_form'],['c_reps','c_hud'],['c_form','c_hud'],['c_form','c_cues'],
+  ['c_reps','c_fatigue'],['c_hud','c_camera','next frame','loop',14],
+  ['c_hud','c_sets'],['c_sets','c_live'],['c_sets','c_report'],['c_live','c_sync'],
+  ['c_report','c_dashboard','next exercise','loop',34],
+  ['c_wake','c_brain'],['c_brain','c_modes'],
+];
+return { D, PLAIN, EX, EDGES };
+})();
+
+function initFlow(pane, cfg){
+  const $=r=>pane.querySelector(`[data-r="${r}"]`);
+  const board=$('board'), wires=$('wires');
+  const nodes=[...pane.querySelectorAll('.node')];
+  const byKey=Object.fromEntries([...pane.querySelectorAll('[data-k]')].map(n=>[n.dataset.k,n]));
+  function box(el){const b=board.getBoundingClientRect(),r=el.getBoundingClientRect();
+    return {l:r.left-b.left,r:r.right-b.left,t:r.top-b.top,b:r.bottom-b.top,cx:(r.left+r.right)/2-b.left,cy:(r.top+r.bottom)/2-b.top};}
+  function rounded(pts,rad){let d=`M${pts[0][0]} ${pts[0][1]}`;
+    for(let i=1;i<pts.length-1;i++){const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
+      const r1=Math.min(rad,Math.hypot(x1-x0,y1-y0)/2,Math.hypot(x2-x1,y2-y1)/2);
+      d+=` L${x1-Math.sign(x1-x0)*r1} ${y1-Math.sign(y1-y0)*r1} Q${x1} ${y1} ${x1+Math.sign(x2-x1)*r1} ${y1+Math.sign(y2-y1)*r1}`;}
+    const l=pts[pts.length-1]; return d+` L${l[0]} ${l[1]}`;}
+  function draw(){
+    [...wires.querySelectorAll('path,text')].forEach(e=>e.remove());
+    if(pane.hidden||getComputedStyle(wires).display==='none') return;
+    const W=board.clientWidth;
+    cfg.EDGES.forEach(([a,b,label,kind,off])=>{
+      const A=byKey[a],B=byKey[b]; if(!A||!B) return;
+      const p=box(A),q=box(B); let pts, lx, ly, anchor='start';
+      if(kind==='back'){
+        if(q.l>=p.r-2&&Math.abs(p.cy-q.cy)<30){ pts=[[p.r,p.cy],[q.l,q.cy]]; lx=p.r+2; ly=p.cy-9; }
+        else { const x=p.r+14; pts=[[p.r,p.cy],[x,p.cy],[x,q.cy],[q.r,q.cy]]; lx=q.r+12; ly=q.cy-9; }
+      } else if(kind==='loop'){
+        const x=W-(off||12); pts=[[p.r,p.cy],[x,p.cy],[x,q.cy],[q.r,q.cy]]; lx=x-6; ly=p.cy-9; anchor='end';
+      } else if(Math.abs(p.cy-q.cy)<30){
+        pts = q.l>=p.r ? [[p.r,p.cy],[q.l,q.cy]] : [[p.l,p.cy],[q.r,q.cy]];
+        lx=(pts[0][0]+pts[1][0])/2; ly=p.cy-9; anchor='middle';
+      } else if(Math.abs(p.cx-q.cx)<4){ pts=[[p.cx,p.b],[q.cx,q.t]]; }
+      else { const gap=q.t-p.b, my = gap>110 ? q.t-18 : p.b+gap/2; pts=[[p.cx,p.b],[p.cx,my],[q.cx,my],[q.cx,q.t]];
+        if(q.t<p.b){ pts=[[p.cx,p.b],[p.cx,p.b+14],[q.cx,p.b+14],[q.cx,q.t]]; } }
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',rounded(pts,10)); path.setAttribute('class','wire'+(kind?' '+kind:''));
+      path.setAttribute('marker-end',`url(#${kind==='back'?'ahr':kind==='loop'?'ahb':'ah'})`); wires.appendChild(path);
+      if(label){const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+        t.setAttribute('x',lx??(pts[0][0]+8)); t.setAttribute('y',ly??((pts[0][1]+pts[pts.length-1][1])/2));
+        t.setAttribute('class','wlabel'+(kind?' '+kind:'')); t.setAttribute('text-anchor',anchor);
+        t.textContent=label; wires.appendChild(t);}
+    });
+  }
+  let cur=0;
+  function show(i,scroll){cur=(i+nodes.length)%nodes.length; const n=nodes[cur], k=n.dataset.k, d=cfg.D[k];
+    nodes.forEach(x=>x.classList.toggle('active',x===n));
+    const card=$('panel'); card.className='panel '+n.dataset.kind;
+    $('pic').innerHTML=n.querySelector('.ic').innerHTML; $('ptag').textContent=d.tag; $('ptitle').textContent=d.title;
+    $('pplain').textContent=cfg.PLAIN[k]||''; $('pex').innerHTML=cfg.EX[k]||'';
+    $('prules').innerHTML=d.items.map(x=>`<li>${x}</li>`).join(''); $('pfile').textContent=d.file;
+    if(scroll&&matchMedia('(max-width:1100px)').matches) card.scrollIntoView({behavior:'smooth',block:'start'});}
+  nodes.forEach((n,i)=>{n.addEventListener('click',()=>show(i,true));
+    n.addEventListener('keydown',e=>{if(['ArrowDown','ArrowRight'].includes(e.key)){e.preventDefault();show(i+1);nodes[cur].focus();}
+      if(['ArrowUp','ArrowLeft'].includes(e.key)){e.preventDefault();show(i-1);nodes[cur].focus();}});});
+  $('prev').onclick=()=>show(cur-1); $('next').onclick=()=>show(cur+1);
+  show(Math.max(0,nodes.indexOf(byKey[cfg.start])));
+  new ResizeObserver(()=>requestAnimationFrame(draw)).observe(board);
+  return {draw};
 }
-const panel={ic:document.getElementById('pic'),tag:document.getElementById('ptag'),title:document.getElementById('ptitle'),
-  plain:document.getElementById('pplain'),ex:document.getElementById('pex'),rules:document.getElementById('prules'),file:document.getElementById('pfile')};
-let cur=0;
-function show(i,scroll){cur=(i+nodes.length)%nodes.length; const n=nodes[cur], k=n.dataset.k, d=D[k];
-  nodes.forEach(x=>x.classList.toggle('active',x===n));
-  const card=document.getElementById('panel'); card.className='panel '+n.dataset.kind;
-  panel.ic.innerHTML=ICON[n.dataset.icon]; panel.tag.textContent=d.tag; panel.title.textContent=d.title;
-  panel.plain.textContent=PLAIN[k]||''; panel.ex.innerHTML=EX[k]||'';
-  panel.rules.innerHTML=d.items.map(x=>`<li>${x}</li>`).join(''); panel.file.textContent=d.file;
-  if(scroll&&matchMedia('(max-width:1100px)').matches) card.scrollIntoView({behavior:'smooth',block:'start'});}
-nodes.forEach((n,i)=>{n.addEventListener('click',()=>show(i,true));
-  n.addEventListener('keydown',e=>{if(['ArrowDown','ArrowRight'].includes(e.key)){e.preventDefault();show(i+1);nodes[cur].focus();}
-    if(['ArrowUp','ArrowLeft'].includes(e.key)){e.preventDefault();show(i-1);nodes[cur].focus();}});});
-document.getElementById('prev').onclick=()=>show(cur-1); document.getElementById('next').onclick=()=>show(cur+1);
-show(nodes.indexOf(byKey.targets));
-addEventListener('resize',()=>requestAnimationFrame(draw)); if(document.fonts) document.fonts.ready.then(draw);
-new ResizeObserver(()=>requestAnimationFrame(draw)).observe(board); draw();
+const FLOWS={
+  plan: initFlow(document.querySelector('[data-pane="plan"]'), {...PLAN, start:'targets'}),
+  cm5: initFlow(document.querySelector('[data-pane="cm5"]'), {...CM5, start:'c_pose'}),
+};
+function pick(tab){
+  document.querySelectorAll('.tabbtn').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===tab)));
+  document.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.pane!==tab);
+  try{localStorage.setItem('bm-flow-tab',tab);}catch(e){}
+  requestAnimationFrame(()=>FLOWS[tab].draw());
+}
+document.querySelectorAll('.tabbtn').forEach(b=>b.onclick=()=>pick(b.dataset.tab));
+let startTab='plan'; try{ startTab=(new URLSearchParams(location.search).get('tab'))||localStorage.getItem('bm-flow-tab')||'plan'; }catch(e){}
+pick(FLOWS[startTab]?startTab:'plan');
+addEventListener('resize',()=>Object.values(FLOWS).forEach(f=>requestAnimationFrame(f.draw)));
+if(document.fonts) document.fonts.ready.then(()=>Object.values(FLOWS).forEach(f=>f.draw()));
 (function(){const r=document.documentElement,k='bm-planflow-theme';
   try{const s=localStorage.getItem(k); if(s&&!r.classList.contains('embed')) r.setAttribute('data-theme',s);}catch(e){}
   document.getElementById('theme').onclick=()=>{const c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
-    const n=c==='light'?'dark':'light'; r.setAttribute('data-theme',n); try{localStorage.setItem(k,n);}catch(e){} draw();};})();
+    const n=c==='light'?'dark':'light'; r.setAttribute('data-theme',n); try{localStorage.setItem(k,n);}catch(e){} Object.values(FLOWS).forEach(f=>f.draw());};})();
+
 </script>
 </body>
 </html>
