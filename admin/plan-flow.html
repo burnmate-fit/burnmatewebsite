@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BurnMate Plan Flow</title>
+<script>if(location.search.includes('embed')){document.documentElement.classList.add('embed');document.documentElement.setAttribute('data-theme','dark');}</script>
+<style>
+:root{
+  --bg:#0b0d0c; --bg2:#101311; --card:#151917; --card2:#1b201d; --line:#2b322e; --arrow:#4a554f;
+  --text:#eef2ee; --muted:#9aa49d; --dim:#6f7a73;
+  --start:#2dd4bf; --gate:#fb7185; --food:#84cc16; --ex:#a78bfa; --ai:#f59e0b; --srv:#38bdf8; --save:#34d399;
+  --r:16px;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f4f6f3; --bg2:#eef1ed; --card:#ffffff; --card2:#f6f8f5; --line:#dfe4de; --arrow:#a9b4ac;
+  --text:#141914; --muted:#566159; --dim:#7b867e;
+  --start:#0f766e; --gate:#be123c; --food:#4d7c0f; --ex:#6d28d9; --ai:#b45309; --srv:#0369a1; --save:#047857;}}
+:root[data-theme="light"]{
+  --bg:#f4f6f3; --bg2:#eef1ed; --card:#ffffff; --card2:#f6f8f5; --line:#dfe4de; --arrow:#a9b4ac;
+  --text:#141914; --muted:#566159; --dim:#7b867e;
+  --start:#0f766e; --gate:#be123c; --food:#4d7c0f; --ex:#6d28d9; --ai:#b45309; --srv:#0369a1; --save:#047857;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.page{max-width:1360px;margin:0 auto;padding:36px 24px 72px}
+header{display:flex;gap:24px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:28px}
+h1{font-size:30px;line-height:1.15;margin:0 0 10px;letter-spacing:-.02em}
+.lede{margin:0;color:var(--muted);max-width:720px;font-size:15.5px}
+.lede b{color:var(--text)}
+.tools{display:flex;gap:8px}
+.btn{background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{color:var(--text)}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.sum .ic{flex:none}
+.sum h4{margin:0 0 4px;font-size:14.5px}
+.sum p{margin:0;color:var(--muted);font-size:13.5px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
+.board{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:22px;padding:28px 26px 34px}
+svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.wire{fill:none;stroke:var(--arrow);stroke-width:1.8}
+.wire.back{stroke:var(--gate);stroke-dasharray:6 6}
+.wire.loop{stroke:var(--srv);stroke-dasharray:6 6}
+.wlabel{font-size:11.5px;font-weight:650;fill:var(--muted);paint-order:stroke;stroke:var(--bg2);stroke-width:5px}
+.wlabel.back{fill:var(--gate)} .wlabel.loop{fill:var(--srv)}
+.grid{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:34px;row-gap:34px}
+.sec{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:6px 0 -14px;color:var(--dim);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.lanehead{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:0 0 -8px 4px;display:flex;align-items:center;gap:8px}
+.lanehead svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lanehead.food{color:var(--food)} .lanehead.ex{color:var(--ex)}
+.col1{grid-column:1}.col2{grid-column:2}.col3{grid-column:3}.span3{grid-column:1/-1}
+.stack{display:flex;flex-direction:column;gap:30px}
+.lanebox{border:1.5px dashed var(--line);border-radius:20px;padding:16px 14px 18px;gap:26px}
+.lanebox.food{border-color:color-mix(in srgb,var(--food) 40%,var(--line));background:color-mix(in srgb,var(--food) 4%,transparent)}
+.lanebox.ex{border-color:color-mix(in srgb,var(--ex) 40%,var(--line));background:color-mix(in srgb,var(--ex) 4%,transparent);align-self:start}
+.node{position:relative;z-index:1;display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;background:var(--card);color:var(--text);
+  border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer;font:inherit;transition:transform .15s,border-color .15s,box-shadow .15s}
+.node:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--c) 55%,var(--line))}
+.node:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.node.active{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
+.node .tx{min-width:0}
+.node .t{display:block;font-weight:650;font-size:14.5px;line-height:1.3}
+.node .s{display:block;color:var(--muted);font-size:12.8px;margin-top:4px;line-height:1.4}
+.ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c);flex:none}
+.ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k-start{--c:var(--start)}.k-gate{--c:var(--gate)}.k-food{--c:var(--food)}.k-ex{--c:var(--ex)}.k-ai{--c:var(--ai)}.k-srv{--c:var(--srv)}.k-save{--c:var(--save)}
+.loopbox{grid-column:1/-1;border:1.5px dashed color-mix(in srgb,var(--srv) 45%,var(--line));border-radius:20px;padding:30px 22px 26px;position:relative}
+.loopbox .badge{position:absolute;top:-12px;left:18px;background:var(--bg2);padding:0 10px;color:var(--srv);font-size:12px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}
+.loopbox .grid{row-gap:34px}
+aside{position:sticky;top:20px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.ph{padding:20px 22px 16px;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:flex-start}
+.ph .tag{display:inline-block;font-size:11.5px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
+.ph h3{margin:2px 0 0;font-size:19px;line-height:1.25}
+.pb{padding:18px 22px 22px}
+.plain{margin:0 0 16px;font-size:14.5px}
+.eg{background:color-mix(in srgb,var(--food) 9%,var(--card2));border:1px solid color-mix(in srgb,var(--food) 30%,var(--line));border-radius:14px;padding:12px 14px;margin-bottom:18px}
+.eg .h svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.eg .h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--food);margin-bottom:4px}
+.eg p{margin:0;font-size:14px}
+.rules h5{margin:0 0 6px;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.rules ul{margin:0;padding-left:18px}
+.rules li{margin:6px 0;font-size:13.5px;color:var(--text)}
+.rules li b{font-weight:650}
+.num{font-variant-numeric:tabular-nums;font-weight:650}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 5px}
+.file{display:block;margin-top:16px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim)}
+.nav{display:flex;justify-content:space-between;gap:8px;padding:0 22px 20px}
+.persona{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;color:var(--muted);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+footer{margin-top:36px;color:var(--dim);font-size:12.5px}
+@media (max-width:1100px){.layout{grid-template-columns:1fr} aside{position:static} .summary{grid-template-columns:1fr 1fr}}
+@media (max-width:720px){
+  .page{padding:22px 16px 56px} h1{font-size:24px}
+  .summary{grid-template-columns:1fr}
+  .board{padding:18px 14px} .grid{grid-template-columns:1fr;row-gap:22px}
+  .col1,.col2,.col3{grid-column:1}  .stack{gap:22px}
+  .loopbox{padding:24px 12px 18px} svg.wires{display:none}
+  .node{padding:12px 14px}
+}
+/* inside the admin panel (?embed): admin colours, no own title, full width */
+html.embed{--bg:#0d0f0c;--bg2:#111310;--card:#1b1e18;--card2:#161814;--line:#2a2e25;--arrow:#4b5245;--text:#e7eadf;--muted:#9ca393;--dim:#6b7263;--food:#84CC16}
+html.embed header{display:none}
+html.embed .page{max-width:none;padding:2px 2px 28px}
+html.embed .summary{margin-bottom:20px;gap:12px}
+html.embed .sum{padding:14px 16px}
+html.embed .board{border-radius:16px}
+html.embed .panel{border-radius:16px}
+html.embed aside{top:2px}
+html.embed .layout{grid-template-columns:minmax(0,1fr) 340px;gap:20px}
+html.embed .board{padding:22px 16px 26px}
+html.embed .grid{column-gap:20px}
+html.embed .node{padding:12px 13px;gap:10px}
+html.embed .node .t{font-size:14px}
+html.embed .node .s{font-size:12.4px}
+html.embed .ic{width:32px;height:32px;border-radius:10px}
+html.embed .lanebox{padding:14px 10px 16px}
+html.embed .pb{padding:16px 18px 18px} html.embed .ph{padding:18px 18px 14px}
+html.embed footer{margin-top:20px}
+html.embed ::-webkit-scrollbar{width:10px;height:10px}
+html.embed ::-webkit-scrollbar-thumb{background:#2a2e25;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div>
+    <h1>How a BurnMate weekly plan is made</h1>
+    <p class="lede">The server prepares <b>food</b> and <b>exercise</b> separately, merges them into <b>one prompt</b>, lets the AI <b>choose</b> from safe lists, then
+      computes and checks every number itself. Click any box — the panel explains it in plain words and shows what happens for <b>Asha</b>, a sample user.</p>
+  </div>
+  <div class="tools"><button class="btn" id="theme" type="button">Light / dark</button></div>
+</header>
+
+<div class="summary">
+  <div class="sum k-gate"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><div><h4>Safety first</h4><p>A profile check runs before anything else.</p></div></div>
+  <div class="sum k-food"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div><div><h4>No AI in the maths</h4><p>Calories, macros and safe lists are pure server rules.</p></div></div>
+  <div class="sum k-ai"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/></svg></div><div><h4>One AI call per part</h4><p>Mon–Wed, then Thu–Sun. Gemini first, Groq if it fails.</p></div></div>
+  <div class="sum k-srv"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></div><div><h4>Checked, then saved</h4><p>Every day is graded; a miss gets one retry.</p></div></div>
+</div>
+
+<div class="layout">
+<div class="board" id="board">
+  <svg class="wires" id="wires" aria-hidden="true"><defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--arrow)"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gate)"/></marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--srv)"/></marker>
+  </defs></svg>
+  <div class="grid" id="grid">
+    <div class="sec">1 · What starts a plan</div>
+    <div class="col1"><button class="node k-start" type="button" data-k="trigger_app" data-kind="k-start" data-icon="phone"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></span><span class="tx"><span class="t">App asks for a plan</span><span class="s">Onboarding or profile change</span></span></button></div>
+    <div class="col2"><button class="node k-start" type="button" data-k="trigger_stale" data-kind="k-start" data-icon="calendar"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span class="tx"><span class="t">New week, no plan yet</span><span class="s">Opening the app on a new week</span></span></button></div>
+    <div class="col3"><button class="node k-start" type="button" data-k="trigger_sunday" data-kind="k-start" data-icon="clock"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span><span class="tx"><span class="t">Sunday evening job</span><span class="s">Next week for active users</span></span></button></div>
+
+    <div class="sec">2 · Safety &amp; setup</div>
+    <div class="col2"><button class="node k-gate" type="button" data-k="screening" data-kind="k-gate" data-icon="shield"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="tx"><span class="t">Profile check</span><span class="s">Can BurnMate serve this person?</span></span></button></div>
+    <div class="col2"><button class="node k-save" type="button" data-k="skeleton" data-kind="k-save" data-icon="save"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></span><span class="tx"><span class="t">Plan skeleton saved</span><span class="s">7 day slots, the app starts waiting</span></span></button></div>
+    <div class="col2"><button class="node k-srv" type="button" data-k="review" data-kind="k-srv" data-icon="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></span><span class="tx"><span class="t">Last week's review</span><span class="s">Calories and foods to avoid or prefer</span></span></button></div>
+
+    <div class="sec">3 · Two lanes, no AI</div>
+    <div class="col1 stack lanebox food" data-k="lane_food"><div class="lanehead food"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg> Food lane</div>
+      <button class="node k-food" type="button" data-k="targets" data-kind="k-food" data-icon="flame"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span><span class="tx"><span class="t">Calories &amp; macros</span><span class="s">BMR × activity, goal, protein first</span></span></button>
+      <button class="node k-food" type="button" data-k="foodfilter" data-kind="k-food" data-icon="filter"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></span><span class="tx"><span class="t">Food filter</span><span class="s">Diet, allergies, dislikes, health caps</span></span></button>
+      <button class="node k-food" type="button" data-k="healthrules" data-kind="k-food" data-icon="heart"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.2 12h4.3l1.5-3 3 6 1.5-3h7.3"/></svg></span><span class="tx"><span class="t">Health advice</span><span class="s">Text the AI must follow</span></span></button>
+      <button class="node k-food" type="button" data-k="season" data-kind="k-food" data-icon="leaf"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span><span class="tx"><span class="t">Season &amp; region</span><span class="s">Fresh produce where you live</span></span></button>
+    </div>
+    <div class="col3 stack lanebox ex" data-k="lane_ex"><div class="lanehead ex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg> Exercise lane</div>
+      <button class="node k-ex" type="button" data-k="energy" data-kind="k-ex" data-icon="zap"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="tx"><span class="t">Energy &amp; burn</span><span class="s">Burn range for a session</span></span></button>
+      <button class="node k-ex" type="button" data-k="safeex" data-kind="k-ex" data-icon="dumbbell"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg></span><span class="tx"><span class="t">Safe exercises</span><span class="s">Level, injuries, BP, equipment</span></span></button>
+      <button class="node k-ex" type="button" data-k="activedays" data-kind="k-ex" data-icon="calendar"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span class="tx"><span class="t">Workout days</span><span class="s">Which days you train</span></span></button>
+    </div>
+    <div class="col2"><button class="node k-srv" type="button" data-k="parts" data-kind="k-srv" data-icon="layers"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7l10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span><span class="tx"><span class="t">Split the week</span><span class="s">Part 1 Mon–Wed · Part 2 Thu–Sun</span></span></button></div>
+
+    <div class="loopbox"><span class="badge">↻ For each part</span>
+      <div class="grid">
+        <div class="col1"><button class="node k-food" type="button" data-k="rag" data-kind="k-food" data-icon="search"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span><span class="tx"><span class="t">Food shortlist</span><span class="s">~35 safe foods per meal</span></span></button></div>
+        <div class="col2"><button class="node k-ai" type="button" data-k="prompt" data-kind="k-ai" data-icon="message"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="tx"><span class="t">One prompt</span><span class="s">Both lanes merged here</span></span></button></div>
+        <div class="col2"><button class="node k-ai" type="button" data-k="llm" data-kind="k-ai" data-icon="sparkles"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/></svg></span><span class="tx"><span class="t">AI picks</span><span class="s">Gemini → Groq fallback</span></span></button></div>
+        <div class="col1"><button class="node k-srv" type="button" data-k="validate_food" data-kind="k-srv" data-icon="utensils"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span><span class="tx"><span class="t">Meals checked &amp; built</span><span class="s">Drop unsafe codes, add oil</span></span></button></div>
+        <div class="col3"><button class="node k-srv" type="button" data-k="validate_ex" data-kind="k-srv" data-icon="dumbbell"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg></span><span class="tx"><span class="t">Workouts checked</span><span class="s">Safe names, sets, burn</span></span></button></div>
+        <div class="col2"><button class="node k-srv" type="button" data-k="optimizer" data-kind="k-srv" data-icon="sliders"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><span class="tx"><span class="t">Portion solver</span><span class="s">Grams to hit calories &amp; protein</span></span></button></div>
+        <div class="col2"><button class="node k-srv" type="button" data-k="grade" data-kind="k-srv" data-icon="gauge"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></span><span class="tx"><span class="t">Grade every day</span><span class="s">±10% PASS · else repair</span></span></button></div>
+        <div class="col3"><button class="node k-gate" type="button" data-k="repair" data-kind="k-gate" data-icon="wrench"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="tx"><span class="t">Ask the AI again</span><span class="s">Once, with the exact misses</span></span></button></div>
+      </div>
+    </div>
+
+    <div class="sec">4 · Saved and shown</div>
+    <div class="col2"><button class="node k-save" type="button" data-k="save" data-kind="k-save" data-icon="save"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></span><span class="tx"><span class="t">Saved after each part</span><span class="s">Days appear in the app</span></span></button></div>
+    <div class="col2"><button class="node k-save" type="button" data-k="after" data-kind="k-save" data-icon="image"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></span><span class="tx"><span class="t">After the last part</span><span class="s">Photos filled, week ready</span></span></button></div>
+  </div>
+</div>
+
+<aside>
+  <div class="panel" id="panel" aria-live="polite">
+    <div class="ph"><div class="ic" id="pic"></div><div><span class="tag" id="ptag"></span><h3 id="ptitle"></h3></div></div>
+    <div class="pb">
+      <p class="plain" id="pplain"></p>
+      <div class="eg"><div class="h"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> For Asha</div><p id="pex"></p></div>
+      <div class="rules"><h5>Exact rules</h5><ul id="prules"></ul><span class="file" id="pfile"></span></div>
+    </div>
+    <div class="nav"><button class="btn" id="prev" type="button">← Previous</button><button class="btn" id="next" type="button">Next →</button></div>
+  </div>
+  <div class="panel" style="margin-top:16px;padding:18px 22px">
+    <div style="font-weight:650;margin-bottom:2px">Sample user: Asha</div>
+    <div style="color:var(--muted);font-size:13.5px">Her numbers below were computed with the real server code.</div>
+    <div class="persona"><span class="chip">32 · female</span><span class="chip">160 cm · 68 kg</span><span class="chip">lightly active</span><span class="chip">beginner</span><span class="chip">weight loss → 62 kg</span><span class="chip">vegetarian</span><span class="chip">North Indian</span><span class="chip">thyroid (low)</span><span class="chip">knee pain</span><span class="chip">peanut allergy</span><span class="chip">dislikes karela</span><span class="chip">4 days · 30 min</span></div>
+  </div>
+</aside>
+</div>
+
+<footer>Traced from burnmate_backend (commit 69a9050, 28 Oct 2026). Update this page whenever a major filter, rule or step changes. Numbers can drift when the code changes; each step names its source file. Arrow keys move between steps.</footer>
+</div>
+
+<script>
+const D = {
+  trigger_app: { tag: 'Start', title: 'App asks for a plan', items: [
+    '<code>POST /users/{user_id}/plan</code> with the full profile (body, health, preferences, goals).',
+    'The request is saved as a snapshot in <code>user_inputs</code>; failure there never blocks the plan.',
+    'Same flow behind <code>POST /workout-plan</code>, which only formats the answer differently.',
+  ], file: 'app/plans/routes.py · generate_and_store_plan' },
+  trigger_stale: { tag: 'Start', title: 'A new week, no plan yet', items: [
+    'GET <code>/users/{id}/plan</code> sees the newest plan is from an earlier week.',
+    'Takes a Postgres advisory lock (one start per user), reviews last week first, then starts this week from the last saved request.',
+    'Returns the new plan while it is still generating.',
+  ], file: 'app/plans/routes.py · _start_this_week' },
+  trigger_sunday: { tag: 'Start', title: 'Sunday evening job', items: [
+    'From <span class="num">18:00 IST</span> every Sunday, every <span class="num">10 min</span> tick.',
+    'Active users only: a plan or workout in the last <span class="num">14 days</span>, and no plan for next week yet.',
+    'Reviews the ending week, then generates Monday–Sunday, <b>one user at a time</b> so the AI provider never sees a burst.',
+    'Skips users the profile check stops, and users whose attempt failed in the last hour.',
+  ], file: 'app/plans/sunday_job.py' },
+  screening: { tag: 'Safety gate', title: 'Profile check', items: [
+    '<b>Pregnant</b> (and not male) → stopped, with a fixed message.',
+    'Typed <b>medical conditions + injuries</b> → one AI call decides ALLOW or STOP for each (type 2 diabetes, BP, thyroid, PCOS… allowed; kidney disease, cancer, heart failure, type 1 diabetes, eating disorders, recent surgery… stopped).',
+    'The answer is cached in <code>condition_checks</code> by normalised text, so the same words always get the same answer.',
+    'A hard <b>stop-word list</b> (dialysis, chemo, cancer, transplant, cirrhosis, heart/kidney failure, anorexia, bulimia, type 1 diabetes, stroke) stops even if the AI allowed.',
+    'AI down → keyword list only. Stopped → HTTP 422 <code>not_supported</code> with a message naming what the user typed.',
+  ], file: 'app/users/screening.py · check_profile' },
+  skeleton: { tag: 'Saved', title: 'Plan skeleton', items: [
+    'Plan row created with <span class="num">7</span> day slots Mon–Sun. Days before today: <code>not_in_plan</code>; today onward: <code>pending</code>.',
+    'Status <code>generating</code>, provider <code>generating</code> (older app builds rely on this), targets and energy profile already filled.',
+    'Marked <code>is_final</code> for the week, so feedback attaches to it. The HTTP response returns now; generation runs as a background task.',
+  ], file: 'app/plans/week.py · start_week_plan' },
+  review: { tag: 'Adaptation', title: 'Weekly review decisions', items: [
+    'Uses the newest review from the last 2 weeks (only when <code>adaptation_apply</code> is on).',
+    'Can set the <b>calorie target</b> and trend <b>weight</b>, plus <b>avoid_codes</b> (shown less) and <b>prefer_codes</b> (foods the user eats and likes).',
+    'If goal, target weight or activity changed since, the calories are dropped and the formula is used again; only the food decisions stay.',
+  ], file: 'app/feedback/review.py · plan_adjustments' },
+  targets: { tag: 'Food lane', title: 'Calorie & macro targets: the AI never sets these', items: [
+    'BMR: FAO/WHO/UNU (Schofield) by age band and sex, <span class="num">× 0.90</span> for Indian adults (ICMR-NIN 2020).',
+    'TEE = BMR × activity factor (<span class="num">1.2</span> sedentary … <span class="num">1.9</span> extremely active; default 1.375).',
+    '<b>Weight loss</b>: deficit = min(<span class="num">550</span>, 25% of TEE); insulin users max <span class="num">300</span>; never below max(<span class="num">1200 F / 1500 M</span>, BMR); underweight (BMI &lt; 18.5) or target reached → no deficit.',
+    '<b>Muscle gain</b>: surplus = min(<span class="num">275</span>, 12% of TEE). Breastfeeding adds energy; kidney disease caps protein.',
+    'Protein g/kg by goal (<span class="num">1.6</span> loss, <span class="num">1.8</span> gain, 1.4 endurance…) on weight capped at BMI 25; kept within 10–35% of energy. Fat <span class="num">25%</span>, carbs the rest.',
+    'Meals: always <span class="num">4</span> (Breakfast 28%, Lunch 37%, Snack 13%, Dinner 22%).',
+  ], file: 'app/food/targets.py · compute_targets, meal_kcal_split' },
+  foodfilter: { tag: 'Food lane', title: 'Food filter: hard rules, applied twice', items: [
+    'Diet type (veg, eggatarian, vegan, …) plus food restrictions.',
+    'Allergens by code; unknown allergy words and <b>dislikes</b> become a blocked-name regex (name, local names, source name).',
+    'Medical-condition rules: excluded categories, nutrient caps per 100 g (an unknown value <b>fails closed</b>), diabetic-friendly only.',
+    'Keto/low-carb carb cap; budget = cost-tier ceiling (and a softer ranking penalty).',
+    'Used in the <b>SQL</b> for retrieval, and again in Python on every code the AI returns (<code>reject_reason</code>).',
+  ], file: 'app/food/filters.py · build_filter, FoodFilter' },
+  healthrules: { tag: 'Food lane', title: 'Health rules (prompt text)', items: [
+    'Diabetes: whole grains and pulses, no sweets or maida, low free sugar.',
+    'High BP: low sodium (no pickles, papad, namkeen), no max-effort cardio.',
+    'Injury hints (the same words the exercise filter uses), condition-specific advice from <code>taxonomy.json</code>, and a general “exclude what is contraindicated” for any other condition.',
+    '<b>Allergies</b> marked life-threatening, including derived ingredients. <b>Dislikes</b> avoided in every meal.',
+    'This is guidance for the AI; the filter above is what actually enforces it.',
+  ], file: 'app/plans/health_rules.py' },
+  season: { tag: 'Food lane', title: 'Season & region', items: [
+    'The user\'s preferred cuisines map to regions; the plan month gives the season.',
+    'Out-of-season fruits and vegetables are excluded from retrieval; in-season ones get a small ranking boost.',
+    'Region is a ranking nudge only, never a filter (oils are never pushed by region).',
+  ], file: 'app/food/seasons.py · app/plans/week_builder.py WeekContext' },
+  energy: { tag: 'Exercise lane', title: 'Energy profile', items: [
+    'BMR and TDEE; tracked <b>steps</b> adjust TDEE only when far from the activity level\'s usual count.',
+    'Intake target = the <b>food lane\'s</b> calorie target (this is where the two lanes share a number).',
+    'Workout burn range = (MET − 1) × 3.5 × kg / 200 × work minutes (session minus warm-up and cool-down), with MET by level.',
+    'The burn is part of the day\'s energy use, <b>not</b> an extra deficit.',
+  ], file: 'app/exercises/energy.py · compute_energy_profile' },
+  safeex: { tag: 'Exercise lane', title: 'Safe exercise list', items: [
+    'SQL filters on <code>public.exercises</code>: difficulty ≤ <span class="num">2</span> (beginner) or ≤ 3; no plyometrics for beginners; main workouts only.',
+    'Injury safety columns, BP safety and pregnancy safety must not be <code>AVOID</code>.',
+    'Every piece of equipment needed must be one the user has (bodyweight always allowed).',
+    'Then a <b>balanced pick of 25</b>: equal turns from each movement pattern (squat, hinge, push, pull, core…), rotated by week so every safe exercise comes up over a few weeks.',
+    'DB error → falls back to the plain safe list, never to an unfiltered one.',
+  ], file: 'app/exercises/safety.py · app/exercises/search.py' },
+  activedays: { tag: 'Exercise lane', title: 'Workout days', items: [
+    '<span class="num">4–7</span> workout days a week, <span class="num">5</span> if not given; older profiles with fewer are raised to 4.',
+    'Short first week (4 days or fewer left, e.g. joining Thursday–Sunday): every remaining day is a workout day.',
+  ], file: 'app/exercises/workout.py · active_weekdays' },
+  parts: { tag: 'Server', title: 'Parts', items: [
+    '3 days or fewer → one part. Otherwise the first <span class="num">3</span> days, then the rest.',
+    'Each part: rate limit → wait <span class="num">20 s</span>, then <span class="num">40 s</span>; any other error → retried once immediately. Still failing → plan status <code>failed</code> with the error.',
+    'The week context carries over: foods used in part 1 count toward weekly limits in part 2, and part 2 is told part 1\'s workouts (muscle balance and recovery).',
+  ], file: 'app/shared/clock.py · split_parts · app/plans/week.py · run_week' },
+  rag: { tag: 'Food lane', title: 'Ingredient palette (retrieval)', items: [
+    'For each meal type, a query sentence (meal, goal, diet, cuisines, condition hints) is embedded and matched against ingredient embeddings (pgvector, or exact in-process fallback).',
+    'Score = similarity + popularity + right-meal boost + protein boost (loss/gain goals) + season + region − already-used penalty − cost penalty.',
+    'Top N per food group (staple, protein, animal, vegetable, fruit, nut/seed, fat…), so no group crowds out the others.',
+    'Excluded: rotators used up this week, review “avoid” foods, out-of-season items, foods a condition keeps out of that meal (e.g. soya at breakfast with a thyroid tablet).',
+    'Always added: everyday bases and protein foods, and the user\'s liked foods, if the filter allows them.',
+  ], file: 'app/food/search.py · retrieve · app/plans/week_builder.py · _palette' },
+  prompt: { tag: 'AI input', title: 'The one prompt per part', items: [
+    'Days to plan, each marked WORKOUT or REST.',
+    'User profile, energy numbers and burn range, earlier days\' workouts, health rules.',
+    'Daily targets and per-meal kcal and protein.',
+    '“INGREDIENTS YOU MAY USE”: the palette as <code>code name | unit | kcal/P | meals</code>. Use only these codes.',
+    'Meal rules: lunch and dinner = staple + one protein + one vegetable; breakfast has one base; snacks uncooked, at most 2 items; butter, ghee and cheese at most twice a week; each protein or vegetable at most 2× in these days; at most one uncommon ingredient a day.',
+    'Workout section: 3–5 exercises from the safe list only, sets and reps in range, 2–3 warm-ups and 2–3 stretches every day from fixed lists, level rules.',
+    'Exact JSON shape to return.',
+  ], file: 'app/plans/prompt.py · build_part_prompt · app/exercises/workout.py · prompt_section' },
+  llm: { tag: 'AI call', title: 'AI provider chain', items: [
+    'Order from <code>LLM_PROVIDER</code>: default <b>Gemini → Groq</b>; “groq” flips it.',
+    'One provider slow, rate-limited or down never fails the request; the next one is tried.',
+    'Output is parsed leniently (code fences and comments stripped; outermost <code>{…}</code> if needed).',
+    'The model\'s answer is only <b>choices</b>; nothing it says about calories is used.',
+  ], file: 'app/shared/llm.py · generate_plan' },
+  validate_food: { tag: 'Server', title: 'Meals: validate & build', items: [
+    'Unknown code → dropped and reported. Filter rejects it (allergen, diet, cap…) → dropped.',
+    'Rich items (butter, ghee, cheese, peanut butter, whey, maida) ≤ <span class="num">2</span> meals a week. Other rotating foods ≤ <span class="num">3</span> a week. Daily caps (curd 2, milk 2, buttermilk 1…).',
+    'At most 2 proteins in a meal; snacks never cooked (no oil or flour); breakfast keeps one base.',
+    'Empty meal → a plain safe fallback meal. Lunch and dinner missing a staple, protein or vegetable → the missing part is added.',
+    'Cooked meals without a fat → the regional cooking oil (about 5 g) is added so its calories count.',
+  ], file: 'app/plans/week_builder.py · _day_meals' },
+  validate_ex: { tag: 'Server', title: 'Workouts: validate & build', items: [
+    'Exercise names must be on the safe list (aliases matched); unknown names are dropped and reported.',
+    'A workout day with no usable pick gets a rotation of the safe list.',
+    'Sets clamped to 1 … base + 1. Then the day\'s burn is fitted into the burn range, one set at a time, then one more safe exercise. Never more reps, never unsafe volume.',
+    'Rest days: no main workout, gentle warm-up and stretches.',
+  ], file: 'app/exercises/workout.py · build_day_workout, _fit_burn' },
+  optimizer: { tag: 'Server', title: 'Portion optimizer + top-ups', items: [
+    'Bounded weighted least squares on grams: day kcal = target (weight 3), protein ≥ target (3; a ≤ cap of 4 for kidney care), fat (1), carbs (0.6), each meal ≈ its share (2), stay near the AI\'s portions (0.15). Inside each ingredient\'s gram bounds; a few ms.',
+    '<b>Energy top-ups</b>: kcal &lt; <span class="num">90%</span> → up to 2 extra staples or fruit on the meal furthest under its share.',
+    '<b>Protein sides</b>: protein &lt; <span class="num">92%</span> → natural sides (milk or egg at breakfast, curd or paneer at lunch and dinner, roasted chana at the snack), up to the daily max.',
+    'Counted foods snapped to whole numbers (no 2.5 roti or half an egg), then the rest refitted.',
+  ], file: 'app/food/portions.py · optimize_day · app/plans/week_builder.py' },
+  grade: { tag: 'Server', title: 'Grading', items: [
+    'Calories: within <span class="num">±10%</span> PASS, <span class="num">±15%</span> NEAR TARGET, else NEEDS REPAIR.',
+    'Protein is a minimum: at or above target = PASS; below, ±15% / ±25%. Kidney care flips it into a ceiling.',
+    'Score for a part = (days needing repair, total relative miss); lower wins.',
+  ], file: 'app/food/portions.py · grade, protein_grade · week_builder._miss_score' },
+  repair: { tag: 'AI call (second)', title: 'Repair loop', items: [
+    'Triggered when any day NEEDS REPAIR on calories, or protein is under <span class="num">85%</span> (over 110% for a protein cap).',
+    'The prompt is rebuilt with “THE PREVIOUS ANSWER MISSED…” listing each day\'s exact miss and how to fix it.',
+    'At most <b>2 attempts</b> per part; the better-scoring answer is kept, even if it is the first.',
+  ], file: 'app/plans/week_builder.py · generate_part, _repair_feedback' },
+  save: { tag: 'Saved', title: 'Saved after each part', items: [
+    'Meal and workout days merged into the 7 slots; nutrition nodes (overview, weekly meal plan) and fitness nodes (overview, schedule, recovery).',
+    '<b>Weekly nutrition check</b>: average kcal and macros vs targets. <b>Workout check</b>: days on burn target (≥ 80% → achieved), unknown exercises → REVIEW, rest-day count.',
+    'CM5 kiosk payload and exercise images and videos attached. <code>days_ready</code> increases; status <code>partial</code>, then <code>ready</code> with the model name.',
+  ], file: 'app/plans/week.py · run_week · week_builder.weekly_validation' },
+  after: { tag: 'Saved', title: 'After the last part', items: [
+    'Ingredients without a photo get one (stored on the ingredient for later plans). This never fails or slows the plan.',
+    'The app, polling GET, now shows every day as ready.',
+  ], file: 'app/food/photos.py · fill_missing_images' },
+};
+
+const PLAIN = {
+  trigger_app: "The app sends everything you entered — body, goal, health, food and workout choices — and asks for this week's plan.",
+  trigger_stale: "If you open the app in a new week and there is no plan yet, the server makes one from your last saved answers.",
+  trigger_sunday: "Every Sunday evening the server prepares next week for everyone who used BurnMate in the last two weeks, one person at a time.",
+  screening: "Before any plan, the server checks the health answers. Common conditions are fine; serious ones get a polite stop message.",
+  skeleton: "An empty week is saved straight away so the app can show 'Being prepared' while the real days are made in the background.",
+  review: "From week two, what you really ate, burned and weighed last week adjusts this week's calories and foods.",
+  targets: "Your daily calories and protein, carbs and fat come from a standard formula, not from the AI.",
+  foodfilter: "Hard rules decide which foods are allowed at all — diet, allergies, dislikes and health limits.",
+  healthrules: "Short advice lines for the AI, like 'no soya at breakfast with a thyroid tablet'. The filter is what actually enforces them.",
+  season: "Fruit and vegetables that aren't in season this month in your region are left out; fresh ones are preferred.",
+  energy: "How many calories a workout session should burn, from your weight, level and minutes.",
+  safeex: "Exercises that could hurt you (knees, back, BP) or need equipment you don't have are removed; 25 are offered for the week.",
+  activedays: "Which days are workout days, from how many days a week you chose.",
+  parts: "The week is made in two pieces so the first days show up quickly.",
+  rag: "For each meal, the best-matching safe foods are picked, with a fair mix of grains, proteins, vegetables and fruit.",
+  prompt: "Food and exercise lists, targets and health advice are put together into one message for the AI.",
+  llm: "The AI chooses meals and exercises only from the lists it was given. Its calorie numbers are ignored.",
+  validate_food: "Every food the AI chose is checked again; anything unsafe or unknown is removed and the plate is completed.",
+  validate_ex: "Every exercise is checked against the safe list; sets are kept sensible and the burn is fitted.",
+  optimizer: "A solver adjusts the grams so each day hits the calorie and protein targets with realistic portions.",
+  grade: "Each day is graded. Within 10% of calories is a pass.",
+  repair: "If a day misses badly, the AI gets one more try with the exact numbers it missed; the better answer is kept.",
+  save: "Each finished part is saved, so days appear in the app as they're ready. The TV gets today's workout.",
+  after: "Once the whole week is done, missing food photos are added. The plan is complete."
+};
+const EX = {
+  trigger_app: "She finishes onboarding on Monday 2 Nov and taps “Create my plan”.",
+  trigger_stale: "Not needed this week — she just made one. It covers her if she skips a Sunday.",
+  trigger_sunday: "On Sunday 8 Nov at 18:00 her week 2 is made automatically.",
+  screening: "“Thyroid (low / hypo)” and “Knee pain” → allowed. No stop words. She continues.",
+  skeleton: "Mon 2 – Sun 8 Nov saved as 7 empty days; the app shows “Being prepared”.",
+  review: "First week: nothing to review yet, so the formula numbers below are used.",
+  targets: "BMR <b>1,258</b> × 1.375 = <b>1,730</b> kcal burned a day. Weight loss −432 (25% cap) → <b>1,298 kcal</b>. Protein <b>102 g</b>, carbs 141 g, fat 36 g. Meals 363 · 480 · 169 · 286 kcal. About −0.4 kg a week, 62 kg in ~15 weeks.",
+  foodfilter: "Vegetarian (vegan foods allowed too), no peanuts, no bitter gourd. Hypothyroid → no soya or tofu at breakfast.",
+  healthrules: "Her prompt gets the HYPOTHYROID line, the knee-injury line and “peanut allergy: life-threatening”.",
+  season: "November, North India: <b>31</b> foods left out (grapes, jamun, cherries…), <b>29</b> in season get a boost (guava, orange, amla, custard apple…).",
+  energy: "Same 1,730 kcal day. A 30-minute beginner session should burn <b>65–105 kcal</b>.",
+  safeex: "Knee pain + beginner + bodyweight and mat → <b>56</b> safe exercises → <b>25</b> this week (Warrior I, Knee Push-up, Towel Row…).",
+  activedays: "4 days a week → <b>Mon, Wed, Fri, Sat</b>.",
+  parts: "Part 1: Mon–Wed. Part 2: Thu–Sun, which knows what part 1 already used.",
+  rag: "Breakfast shortlist: poha, oats, dalia, besan, curd, milk, guava… — no soya, no peanuts, no grapes.",
+  prompt: "One message for Mon–Wed: her targets, ~35 foods per meal, 25 exercises and her health lines.",
+  llm: "Gemini answers in ~20 s, e.g. “A011 Poha 40 g” and “Knee Push-up 3 × 8”.",
+  validate_food: "Anything outside her shortlist or filter is dropped; cooking oil is added to lunch and dinner.",
+  validate_ex: "Sets kept in range; Monday's burn fitted into 65–105 kcal.",
+  optimizer: "Grams solved so Monday is about 1,298 kcal with at least 102 g protein — and 2 roti, never 2.4.",
+  grade: "e.g. Monday 1,281 kcal → within 10% → PASS.",
+  repair: "e.g. if Tuesday came out 1,050 kcal, the AI is told “Tuesday is 248 kcal short” and tries once more.",
+  save: "Mon–Wed appear in her app; Thu–Sun about a minute later. Her TV shows Monday's workout.",
+  after: "Food photos filled in — her week is complete."
+};
+const ICON = {"phone": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\"/><path d=\"M12 18h.01\"/></svg>", "calendar": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg>", "clock": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>", "shield": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/><path d=\"m9 12 2 2 4-4\"/></svg>", "save": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><path d=\"M17 21v-8H7v8M7 3v5h8\"/></svg>", "history": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 3v5h5\"/><path d=\"M3.05 13A9 9 0 1 0 6 5.3L3 8\"/><path d=\"M12 7v5l4 2\"/></svg>", "flame": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/></svg>", "filter": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M22 3H2l8 9.46V19l4 2v-8.54L22 3z\"/></svg>", "heart": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\"/><path d=\"M3.2 12h4.3l1.5-3 3 6 1.5-3h7.3\"/></svg>", "leaf": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z\"/><path d=\"M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12\"/></svg>", "zap": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M13 2 3 14h9l-1 8 10-12h-9l1-8z\"/></svg>", "dumbbell": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12\"/></svg>", "layers": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m12 2 10 5-10 5L2 7l10-5Z\"/><path d=\"m2 17 10 5 10-5\"/><path d=\"m2 12 10 5 10-5\"/></svg>", "search": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>", "message": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>", "sparkles": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z\"/><path d=\"M19 3v4M17 5h4\"/></svg>", "utensils": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20\"/><path d=\"M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7\"/></svg>", "sliders": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6\"/></svg>", "gauge": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/></svg>", "wrench": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"/></svg>", "image": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21\"/></svg>", "user": "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg>"};
+const KIND = {start:"k-start",gate:"k-gate",food:"k-food",ex:"k-ex",ai:"k-ai",srv:"k-srv",save:"k-save"};
+const EDGES = [
+  ["trigger_app","screening"],["trigger_stale","screening"],["trigger_sunday","screening"],
+  ["screening","skeleton"],["skeleton","review"],["review","lane_food"],["review","lane_ex"],
+  ["targets","foodfilter"],["foodfilter","healthrules"],["healthrules","season"],
+  ["energy","safeex"],["safeex","activedays"],
+  ["lane_food","parts"],["lane_ex","parts"],
+  ["parts","rag"],["parts","prompt"],["rag","prompt"],["prompt","llm"],
+  ["llm","validate_food"],["llm","validate_ex"],["validate_food","optimizer"],["validate_ex","grade"],
+  ["optimizer","grade"],["grade","save","on target"],
+  ["grade","repair","miss","back"],["repair","llm","retry once","back"],
+  ["save","after"],["save","parts","next part","loop"]
+];
+
+const nodes=[...document.querySelectorAll('.node')];
+const byKey=Object.fromEntries([...document.querySelectorAll('[data-k]')].map(n=>[n.dataset.k,n]));
+const board=document.getElementById('board'), wires=document.getElementById('wires');
+function box(el){const b=board.getBoundingClientRect(),r=el.getBoundingClientRect();
+  return {l:r.left-b.left,r:r.right-b.left,t:r.top-b.top,b:r.bottom-b.top,cx:(r.left+r.right)/2-b.left,cy:(r.top+r.bottom)/2-b.top};}
+function rounded(pts,rad){let d=`M${pts[0][0]} ${pts[0][1]}`;
+  for(let i=1;i<pts.length-1;i++){const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
+    const r1=Math.min(rad,Math.hypot(x1-x0,y1-y0)/2,Math.hypot(x2-x1,y2-y1)/2);
+    const ax=x1-Math.sign(x1-x0)*r1, ay=y1-Math.sign(y1-y0)*r1, bx=x1+Math.sign(x2-x1)*r1, by=y1+Math.sign(y2-y1)*r1;
+    d+=` L${ax} ${ay} Q${x1} ${y1} ${bx} ${by}`;}
+  const l=pts[pts.length-1]; return d+` L${l[0]} ${l[1]}`;}
+function draw(){
+  [...wires.querySelectorAll('path.wire,text')].forEach(e=>e.remove());
+  if(getComputedStyle(wires).display==='none') return;
+  const W=board.clientWidth;
+  EDGES.forEach(([a,b,label,kind])=>{
+    const A=byKey[a],B=byKey[b]; if(!A||!B) return;
+    const p=box(A),q=box(B); let pts, lx, ly;
+    if(kind==='back'||kind==='loop'){
+      const side = kind==='loop' ? Math.min(W-8, Math.max(p.r,q.r)+ (kind==='loop'?34:22)) : Math.max(p.r,q.r)+22;
+      if(a==='grade'&&b==='repair'){ pts=[[p.r,p.cy],[q.l,q.cy]]; lx=p.r+2; ly=p.cy-9; }
+      else if(a==='repair'){ const x=p.r+14; pts=[[p.r,p.cy],[x,p.cy],[x,q.cy],[q.r,q.cy]]; lx=q.r+12; ly=q.cy-9; }
+      else { pts=[[p.r,p.cy],[W-12,p.cy],[W-12,q.cy],[q.r,q.cy]]; lx=W-20; ly=p.cy-9; }
+    } else if(Math.abs(p.cx-q.cx)<4){ pts=[[p.cx,p.b],[q.cx,q.t]]; }
+    else { const gap=q.t-p.b, my = gap>110 ? q.t-18 : p.b+gap/2; pts=[[p.cx,p.b],[p.cx,my],[q.cx,my],[q.cx,q.t]];
+      if(q.t<p.b){ pts=[[p.cx,p.b],[p.cx,p.b+14],[q.cx,p.b+14],[q.cx,q.t]]; } }
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',rounded(pts,10)); path.setAttribute('class','wire'+(kind?' '+kind:''));
+    path.setAttribute('marker-end',`url(#${kind==='back'?'ahr':kind==='loop'?'ahb':'ah'})`); wires.appendChild(path);
+    if(label){const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      const last=pts[pts.length-1], first=pts[0];
+      const x=lx??(first[0]+8), y=ly??((first[1]+last[1])/2);
+      t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('class','wlabel'+(kind?' '+kind:''));
+      if(kind==='loop'){t.setAttribute('text-anchor','end');}
+      t.textContent=label; wires.appendChild(t);}
+  });
+}
+const panel={ic:document.getElementById('pic'),tag:document.getElementById('ptag'),title:document.getElementById('ptitle'),
+  plain:document.getElementById('pplain'),ex:document.getElementById('pex'),rules:document.getElementById('prules'),file:document.getElementById('pfile')};
+let cur=0;
+function show(i,scroll){cur=(i+nodes.length)%nodes.length; const n=nodes[cur], k=n.dataset.k, d=D[k];
+  nodes.forEach(x=>x.classList.toggle('active',x===n));
+  const card=document.getElementById('panel'); card.className='panel '+n.dataset.kind;
+  panel.ic.innerHTML=ICON[n.dataset.icon]; panel.tag.textContent=d.tag; panel.title.textContent=d.title;
+  panel.plain.textContent=PLAIN[k]||''; panel.ex.innerHTML=EX[k]||'';
+  panel.rules.innerHTML=d.items.map(x=>`<li>${x}</li>`).join(''); panel.file.textContent=d.file;
+  if(scroll&&matchMedia('(max-width:1100px)').matches) card.scrollIntoView({behavior:'smooth',block:'start'});}
+nodes.forEach((n,i)=>{n.addEventListener('click',()=>show(i,true));
+  n.addEventListener('keydown',e=>{if(['ArrowDown','ArrowRight'].includes(e.key)){e.preventDefault();show(i+1);nodes[cur].focus();}
+    if(['ArrowUp','ArrowLeft'].includes(e.key)){e.preventDefault();show(i-1);nodes[cur].focus();}});});
+document.getElementById('prev').onclick=()=>show(cur-1); document.getElementById('next').onclick=()=>show(cur+1);
+show(nodes.indexOf(byKey.targets));
+addEventListener('resize',()=>requestAnimationFrame(draw)); if(document.fonts) document.fonts.ready.then(draw);
+new ResizeObserver(()=>requestAnimationFrame(draw)).observe(board); draw();
+(function(){const r=document.documentElement,k='bm-planflow-theme';
+  try{const s=localStorage.getItem(k); if(s&&!r.classList.contains('embed')) r.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').onclick=()=>{const c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+    const n=c==='light'?'dark':'light'; r.setAttribute('data-theme',n); try{localStorage.setItem(k,n);}catch(e){} draw();};})();
+</script>
+</body>
+</html>

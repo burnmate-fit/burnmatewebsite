@@ -4,6 +4,7 @@ import { icon } from './icons.js';
 import { renderAnalysis } from './pages/analysis.js';
 import { renderSchema } from './pages/schema.js';
 import { renderPipeline } from './pages/pipeline.js';
+import { renderPlanFlow } from './pages/plan_flow.js';
 import { renderDatabase } from './pages/database.js';
 import { renderTrainer } from './pages/trainer.js';
 import { renderNotifications } from './pages/notifications.js';
@@ -19,6 +20,7 @@ const ROUTES = [
   { id: 'analysis', label: 'Analysis', icon: 'bar-chart', render: renderAnalysis },
   { id: 'schema', label: 'Schema', icon: 'table', render: renderSchema },
   { id: 'pipeline', label: 'AI Pipeline', icon: 'cpu', render: renderPipeline },
+  { id: 'plan-flow', label: 'Plan Flow', icon: 'flow', render: renderPlanFlow },
   { id: 'database', label: 'Database', icon: 'dumbbell', render: renderDatabase },
   { id: 'food', label: 'Food Data', icon: 'utensils', render: renderFood },
   { id: 'catalog', label: 'Catalog', icon: 'table', render: renderCatalog },
