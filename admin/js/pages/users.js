@@ -14,12 +14,45 @@ export async function renderUsers(view) {
   mainGrid.append(usersListCol, planDetailCol);
   view.append(mainGrid);
 
+  // Every planning exercise for the day editor: the ones the CM5 can track
+  // (a ready tracker JSON) first, then all the others (app only, grey on the TV).
   let exercises = [];
   try {
-    exercises = await api.exercises();
+    const all = (await api.catalogExercises()).exercises || [];
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    exercises = [...all.filter((e) => e.tracker_ready).sort(byName),
+                 ...all.filter((e) => !e.tracker_ready).sort(byName)];
   } catch (e) {
     console.error("Failed to load exercises for dropdowns", e);
   }
+  const tracked = (name) => exercises.some((e) => e.tracker_ready && e.name === name);
+  const opt = (value, label) => {
+    const o = el('option', { value }, label);
+    o.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+    return o;
+  };
+  // <select> of all exercises in two groups, the current one selected
+  function exerciseSelect(current, onPick) {
+    const sel = el('select', { class: 'flex-1 min-w-0 border border-line rounded px-2 py-1.5 text-xs' });
+    sel.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+    if (current && !exercises.some((e) => e.name === current)) {
+      sel.append(opt(current, `${current} (not in the exercise list)`));
+    }
+    const onTv = exercises.filter((e) => e.tracker_ready);
+    const rest = exercises.filter((e) => !e.tracker_ready);
+    const g1 = el('optgroup', { label: `📺 On the TV — tracked (${onTv.length})` });
+    onTv.forEach((e) => g1.append(opt(e.name, `${e.name}  ·  ${e.primary_muscle || ''}`)));
+    const g2 = el('optgroup', { label: `All other exercises — app only, grey on the TV (${rest.length})` });
+    rest.forEach((e) => g2.append(opt(e.name, `${e.name}  ·  ${e.primary_muscle || ''}`)));
+    sel.append(g1, g2);
+    sel.value = current;
+    sel.onchange = (ev) => onPick(ev.target.value);
+    return sel;
+  }
+  // small tag beside a row: tracked on the TV or app only
+  const tvTag = (name) => el('span', {
+    class: `shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${tracked(name) ? 'bg-accent/15 text-accent' : 'bg-neutral-800 text-neutral-400'}`,
+  }, tracked(name) ? 'TV' : 'APP');
 
   async function loadUsers() {
     try {
@@ -132,9 +165,10 @@ export async function renderUsers(view) {
            exList.append(el('div', { class: 'text-xs text-neutral-500 italic' }, 'No exercises / Rest day'));
         } else {
            currentExercises.forEach(ex => {
-             exList.append(el('div', { class: 'flex justify-between items-center py-2 border-b border-line/50 text-sm' },
-               el('span', { class: 'text-neutral-200' }, ex.name),
-               el('span', { class: 'text-neutral-500 text-xs' }, `${ex.sets} sets × ${ex.reps} reps (${ex.rest_time}s rest)`)
+             exList.append(el('div', { class: 'flex justify-between items-center gap-2 py-2 border-b border-line/50 text-sm' },
+               el('span', { class: 'flex items-center gap-2 min-w-0' }, tvTag(ex.name),
+                 el('span', { class: 'text-neutral-200 truncate' }, ex.name)),
+               el('span', { class: 'text-neutral-500 text-xs' }, `${ex.sets} sets × ${ex.reps} reps (${parseInt(ex.rest_time, 10) || ex.rest_time}s rest)`)
              ));
            });
         }
@@ -156,23 +190,13 @@ export async function renderUsers(view) {
       currentExercises.forEach((ex, i) => {
         const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
         
-        // exercises API returns display_name (not name)
-        const sel = el('select', { class: 'flex-1 border border-line rounded px-2 py-1.5 text-xs' });
-        sel.style.cssText = 'background:#1b1e18;color:#e7eadf;';
-        // Add current exercise first (may not be in the exercises list)
-        const curOpt = el('option', { value: ex.name }, ex.name || '(unknown)');
-        curOpt.style.cssText = 'background:#1b1e18;color:#e7eadf;';
-        sel.append(curOpt);
-        exercises.forEach(catEx => {
-          const exDisplayName = catEx.display_name || catEx.name || catEx.slug;
-          if (exDisplayName !== ex.name) {
-             const opt = el('option', { value: exDisplayName }, exDisplayName);
-             opt.style.cssText = 'background:#1b1e18;color:#e7eadf;';
-             sel.append(opt);
-          }
+        // all exercises, TV-tracked ones first; the tag shows which kind is picked
+        const tag = tvTag(ex.name);
+        const sel = exerciseSelect(ex.name, (name) => {
+          currentExercises[i].name = name;
+          tag.replaceWith(tvTag(name));
+          drawExercises(true);
         });
-        sel.value = ex.name;
-        sel.onchange = (e) => currentExercises[i].name = e.target.value;
         
         const setsInp = el('input', { type: 'number', class: 'w-14 bg-ink border border-line rounded px-2 py-1.5 text-xs text-center', value: ex.sets });
         setsInp.onchange = (e) => currentExercises[i].sets = parseInt(e.target.value) || 1;
@@ -186,13 +210,13 @@ export async function renderUsers(view) {
            drawExercises(true);
         };
         
-        row.append(sel, el('span', {class: 'text-xs text-neutral-500'}, 'sets:'), setsInp, el('span', {class: 'text-xs text-neutral-500'}, 'reps:'), repsInp, delBtn);
+        row.append(tag, sel, el('span', {class: 'text-xs text-neutral-500'}, 'sets:'), setsInp, el('span', {class: 'text-xs text-neutral-500'}, 'reps:'), repsInp, delBtn);
         exList.append(row);
       });
       
       const addBtn = el('button', { class: 'mt-2 text-xs text-accent flex items-center gap-1 py-1 px-2 rounded hover:bg-accent/10' }, icon('plus', 'w-3 h-3'), 'Add Exercise');
       addBtn.onclick = () => {
-         currentExercises.push({ name: exercises[0]?.name || 'Squat', sets: 3, reps: 10, rest_time: 60 });
+         currentExercises.push({ name: exercises[0]?.name || 'Bodyweight Squat', sets: 3, reps: 10, rest_time: 60 });
          drawExercises(true);
       };
       exList.append(addBtn);
