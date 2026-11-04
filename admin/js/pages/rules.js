@@ -19,6 +19,7 @@ const PRETTY = {
   high_knee_raise: 'Standing Knee Raise',
   vrikshasana: 'Vrikshasana (Tree Pose)',
   walking_knee_hugs: 'Walking Knee Hugs (warm-up)',
+  standing_side_bend_stretch: 'Standing Side Bend Stretch (cool-down)',
 };
 
 const WHEN = {
