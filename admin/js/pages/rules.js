@@ -18,6 +18,7 @@ const PRETTY = {
   toe_touch: 'Standing Toe Touch',
   high_knee_raise: 'Standing Knee Raise',
   vrikshasana: 'Vrikshasana (Tree Pose)',
+  walking_knee_hugs: 'Walking Knee Hugs (warm-up)',
 };
 
 const WHEN = {

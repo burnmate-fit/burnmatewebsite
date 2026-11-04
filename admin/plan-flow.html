@@ -509,7 +509,7 @@ const D = {
     'Rest day → "Day N · REST DAY", no cards.',
   ], file: 'fitness_trainer/api/workout_api.py · _valid, is_unavailable' },
   c_media: { tag: 'From the server', title: 'Media download', items: [
-    '<code>GET /media/manifest</code> → every file with its sha1. Only the 11 tracked exercises are downloaded to <code>~/.burnmate/media/exercises/&lt;slug&gt;/</code>.',
+    '<code>GET /media/manifest</code> → every file with its sha1. Only the 12 tracked exercises are downloaded to <code>~/.burnmate/media/exercises/&lt;slug&gt;/</code>.',
     'Card images, demo video + audio, voice cues and the hero video; checked by sha1, files the server dropped are deleted.',
     'Order: today\'s plan first, next exercise first; images before videos. 4 workers; retries after 30 s, doubling to 10 min.',
     'Voice clips as Opus <code>.ogg</code> (1/16 the size) when the board can play it, else WAV. A missing clip just means silence.',
@@ -531,7 +531,8 @@ const D = {
   ], file: 'fitness_trainer/app/handwave_control.py · camera/shared_camera.py' },
   c_dashboard: { tag: 'On the TV', title: 'Dashboard', items: [
     '"Namaste &lt;name&gt;", avatar, weekly score graph (this week, from local history) and "N/7 active · streak".',
-    'Carousel of 3 cards; the first unfinished exercise in the centre. <b>Grey cards</b> (no tracker yet) come after the real ones; raising the arm on one says it isn\'t available and moves on.',
+    'Carousel of 3 cards in the plan\'s order: warm-up, main workout, cool-down; the first unfinished exercise in the centre. <b>Grey cards</b> (no tracker yet) say they aren\'t available and move on.',
+    'A <b>warm-up or cool-down with a tracker</b> (Walking Knee Hugs) is a normal tracked card in its place, labelled "Warm-up", sets and reps from the registry. It is <b>optional</b>: skipping it never stops "today\'s workout complete" or the final summary, and its reps are not added to the day\'s total.',
     'Hero video decoded <b>once into RAM</b> and looped at 30 Hz, because this board has no hardware H.264 decoder.',
     'On show: saves the plan to <code>live.db</code>, sets media priority, sends queued results, schedules Bunny\'s check-in after 3.5 s.',
   ], file: 'fitness_trainer/screens/workout_dashboard.py · widgets/hero_video.py' },
@@ -560,6 +561,7 @@ const D = {
     'Driven by the server\'s <code>tracker_config</code>: joints (squat: hip–knee–ankle), <b>down 100°</b> / <b>up 155°</b>, slack, confirmation frames.',
     'Starts <b>unarmed</b>; arms after 2 frames in the start position.',
     '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side.',
+    '<b>Per side</b> (Walking Knee Hugs): one set of 20 = 10 hugs per leg. Each hug needs 0.45 s at the top; the leg is found from geometry (the higher knee, near or far by depth, facing direction), not MediaPipe\'s left/right labels. A full leg stops counting and says "Now the other knee".',
   ], file: 'exercise_tracker/main_tracker.py · data/exercise_configs/*.json' },
   c_form: { tag: 'Every frame', title: 'Form rules', items: [
     'Each rule (trunk lean, heel lift, knee track, neck line, frame fill…) is judged only in its phase: top &lt; 30%, mid ≥ 30%, bottom ≥ 70% of depth.',
@@ -569,7 +571,7 @@ const D = {
   ], file: 'exercise_tracker/form_check/engine_rule_checker.py · measure_body_angles.py' },
   c_hud: { tag: 'Every frame', title: 'What you see on the TV', items: [
     'Skeleton colours: <b>red</b> blocking or uncorrected fault · <b>amber</b> warning or imperfect rep · <b>grey</b> not visible · <b>green</b> good at the target · white otherwise.',
-    'Rep counter, set progress and up to 2 cue pills (current and previous, 0.6 s fade).',
+    'Rep counter, set progress and up to 2 cue pills (current and previous, 0.6 s fade). Walking Knee Hugs: the counter is two bars, <b>L</b> and <b>R</b>, filling 0 → 10, no numbers.',
     'Rep score = 100 − fault weights (blocking fault −45, default −10).',
     'Shown at up to <b>15 fps</b> (kept low for heat and memory bandwidth); skeleton trails the video by ~130–190 ms.',
   ], file: 'exercise_tracker/display/* · session_summary/rep_score.py' },
@@ -578,6 +580,7 @@ const D = {
     'Rate limit: first cue at once, again after 2.5 s, then every 3 s while the fault lasts; reset after 6 s fixed. Each rule has a lifetime cap.',
     '3+ faults at once → one card: "Please correct your posture" + up to 3 short lines. Amber cues must last 1.2 s before they are spoken.',
     '"Rep not counted" when a rep was rejected. No beeps: the ting / blip / close are Bunny\'s sounds.',
+    'Walking Knee Hugs: no spoken numbers. A counted hug plays a short <b>ting</b> (lower = left leg, higher = right); a hug that does not count plays a low <b>thud</b> plus the fix-it cue ("Hold each hug for a second" when rushed). Sounds ship in the CM5 repo (<code>assets/sounds/</code>).',
   ], file: 'form_check/cue_picker.py · services/voice_player.py' },
   c_fatigue: { tag: 'Every frame', title: 'How you are doing (fatigue)', items: [
     'Each rep compared with your own baseline (median of reps 2–4).',
