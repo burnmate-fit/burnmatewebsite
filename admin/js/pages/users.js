@@ -25,7 +25,37 @@ export async function renderUsers(view) {
   } catch (e) {
     console.error("Failed to load exercises for dropdowns", e);
   }
+  // warm-up and stretch moves for the day editor, TV-tracked ones first
+  let routineMoves = { warm_up: [], cool_down: [] };
+  try {
+    routineMoves = await api.routineMoves();
+  } catch (e) {
+    console.error("Failed to load warm-up / stretch moves", e);
+  }
   const tracked = (name) => exercises.some((e) => e.tracker_ready && e.name === name);
+  // <select> of warm-up (kind 'warm_up') or stretch (kind 'cool_down') moves
+  function routineSelect(kind, current, onPick) {
+    const moves = routineMoves[kind] || [];
+    const sel = el('select', { class: 'flex-1 min-w-0 border border-line rounded px-2 py-1.5 text-xs' });
+    sel.style.cssText = 'background:#1b1e18;color:#e7eadf;';
+    if (current && !moves.some((m) => m.name === current)) {
+      sel.append(opt(current, `${current} (not in the list)`));
+    }
+    const onTv = moves.filter((m) => m.tracked);
+    const rest = moves.filter((m) => !m.tracked);
+    if (onTv.length) {
+      const g1 = el('optgroup', { label: `📺 On the TV — tracked (${onTv.length})` });
+      onTv.forEach((m) => g1.append(opt(m.name, m.name)));
+      sel.append(g1);
+    }
+    const g2 = el('optgroup', { label: `App only (${rest.length})` });
+    rest.forEach((m) => g2.append(opt(m.name, `${m.name}${m.duration ? '  ·  ' + m.duration : ''}`)));
+    sel.append(g2);
+    sel.value = current;
+    sel.onchange = (e) => onPick(e.target.value);
+    return sel;
+  }
+  const routineTracked = (kind, name) => (routineMoves[kind] || []).some((m) => m.tracked && m.name === name);
   const opt = (value, label) => {
     const o = el('option', { value }, label);
     o.style.cssText = 'background:#1b1e18;color:#e7eadf;';
@@ -156,11 +186,60 @@ export async function renderUsers(view) {
       reps: ex.reps || 10,
       rest_time: ex.rest_time || 60
     }));
+    // warm-up and stretches (cool-down): name + duration
+    const routineOf = (list) => (list || []).map(i => ({ name: i.exercise || i.name || '', duration: i.duration || '' }))
+                                            .filter(i => i.name.trim());
+    let currentWarm = routineOf(dayInfo.warm_up_routine);
+    let currentCool = routineOf(dayInfo.cool_down);
+
+    // one routine section (kind 'warm_up' | 'cool_down'), read-only or editable
+    function drawRoutine(kind, title, list, editMode) {
+      exList.append(el('div', { class: 'text-[11px] uppercase tracking-wide text-neutral-500 mt-3' }, title));
+      if (!editMode) {
+        if (!list.length) {
+          exList.append(el('div', { class: 'text-xs text-neutral-600 italic' }, 'None'));
+        }
+        list.forEach(m => {
+          exList.append(el('div', { class: 'flex justify-between items-center gap-2 py-1.5 border-b border-line/30 text-sm' },
+            el('span', { class: 'flex items-center gap-2 min-w-0' },
+              routineTracked(kind, m.name) ? el('span', { class: 'text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent' }, '📺 TV') : '',
+              el('span', { class: 'text-neutral-300 truncate' }, m.name)),
+            el('span', { class: 'text-neutral-500 text-xs' }, m.duration || '')
+          ));
+        });
+        return;
+      }
+      list.forEach((m, i) => {
+        const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
+        const sel = routineSelect(kind, m.name, (name) => {
+          list[i].name = name;
+          drawExercises(true);
+        });
+        const dur = el('input', { type: 'text', class: 'w-24 bg-ink border border-line rounded px-2 py-1.5 text-xs text-center',
+                                  value: m.duration, placeholder: '2 minutes' });
+        dur.oninput = (e) => { list[i].duration = e.target.value; };
+        const delBtn = el('button', { class: 'p-1.5 text-danger hover:bg-danger/10 rounded' }, icon('trash-2', 'w-3.5 h-3.5'));
+        delBtn.onclick = () => { list.splice(i, 1); drawExercises(true); };
+        row.append(routineTracked(kind, m.name) ? el('span', { class: 'text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent' }, '📺 TV') : '',
+                   sel, el('span', { class: 'text-xs text-neutral-500' }, 'time:'), dur, delBtn);
+        exList.append(row);
+      });
+      const addBtn = el('button', { class: 'mt-1 text-xs text-accent flex items-center gap-1 py-1 px-2 rounded hover:bg-accent/10' },
+                        icon('plus', 'w-3 h-3'), kind === 'warm_up' ? 'Add Warm-up' : 'Add Stretch');
+      addBtn.onclick = () => {
+        const first = (routineMoves[kind] || [])[0];
+        list.push({ name: first ? first.name : '', duration: first ? first.duration : '2 minutes' });
+        drawExercises(true);
+      };
+      exList.append(addBtn);
+    }
 
     function drawExercises(editMode = false) {
       exList.innerHTML = '';
 
       if (!editMode) {
+        drawRoutine('warm_up', 'Warm-up', currentWarm, false);
+        exList.append(el('div', { class: 'text-[11px] uppercase tracking-wide text-neutral-500 mt-3' }, 'Main workout'));
         if (currentExercises.length === 0) {
            exList.append(el('div', { class: 'text-xs text-neutral-500 italic' }, 'No exercises / Rest day'));
         } else {
@@ -172,6 +251,7 @@ export async function renderUsers(view) {
              ));
            });
         }
+        drawRoutine('cool_down', 'Stretches (cool-down)', currentCool, false);
         return;
       }
       
@@ -186,6 +266,8 @@ export async function renderUsers(view) {
         exList.append(el('div', { class: 'text-xs text-warning' },
           'This day has exercises, so it is no longer a rest day — the label will be updated on save.'));
       }
+      drawRoutine('warm_up', 'Warm-up', currentWarm, true);
+      exList.append(el('div', { class: 'text-[11px] uppercase tracking-wide text-neutral-500 mt-3' }, 'Main workout'));
 
       currentExercises.forEach((ex, i) => {
         const row = el('div', { class: 'flex gap-2 items-center bg-[#111310] p-2 rounded border border-line' });
@@ -220,6 +302,7 @@ export async function renderUsers(view) {
          drawExercises(true);
       };
       exList.append(addBtn);
+      drawRoutine('cool_down', 'Stretches (cool-down)', currentCool, true);
     }
     
     drawExercises(false);
@@ -246,6 +329,8 @@ export async function renderUsers(view) {
           name: ex.exercise, sets: ex.sets || 3, reps: ex.reps || 10, rest_time: ex.rest_time || 60
        }));
        currentFocus = dayInfo.workout_focus || '';
+       currentWarm = routineOf(dayInfo.warm_up_routine);
+       currentCool = routineOf(dayInfo.cool_down);
        drawExercises(false);
     };
 
@@ -256,7 +341,9 @@ export async function renderUsers(view) {
          const payload = {
             day: dayInfo.day,
             workout_focus: deriveFocus(currentFocus, dayInfo.workout_focus, currentExercises.length > 0),
-            exercises: currentExercises
+            exercises: currentExercises,
+            warm_up: currentWarm.filter(m => m.name.trim()),
+            cool_down: currentCool.filter(m => m.name.trim())
          };
 
          const res = await fetch(`${API_BASE}/admin/api/users/${userId}/plan/day-workout`, {
@@ -276,6 +363,8 @@ export async function renderUsers(view) {
          dayInfo.main_workout = currentExercises.map(ex => ({
             exercise: ex.name, sets: ex.sets, reps: ex.reps, rest_time: ex.rest_time
          }));
+         dayInfo.warm_up_routine = payload.warm_up.map(m => ({ exercise: m.name, duration: m.duration }));
+         dayInfo.cool_down = payload.cool_down.map(m => ({ exercise: m.name, duration: m.duration }));
          dayInfo.workout_focus = saved.workout_focus || payload.workout_focus;
          currentFocus = dayInfo.workout_focus;
          focusLabel.textContent = dayInfo.workout_focus;
