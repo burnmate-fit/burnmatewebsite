@@ -560,7 +560,7 @@ const D = {
   c_reps: { tag: 'Every frame', title: 'Rep counter', items: [
     'Driven by the server\'s <code>tracker_config</code>: joints (squat: hip–knee–ankle), <b>down 100°</b> / <b>up 155°</b>, slack, confirmation frames.',
     'Starts <b>unarmed</b>; arms after 2 frames in the start position.',
-    '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side; the Standing Side Bend Stretch holds 30 s to each side, the side and the depth read from the trunk's sideways tilt, and each hold judged against the upright pose before it (bending forward, twisting, knees, hips pushed out, bouncing).',
+    '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side; the Standing Side Bend Stretch holds 10 s to each side (either side first; spoken: hold it, almost there, stay in the stretch, now the other side), the side and the depth read from the trunk's sideways tilt, and each hold judged against the upright pose before it (bending forward, twisting, knees, hips pushed out, bouncing).',
     '<b>Per side</b> (Walking Knee Hugs): one set of 20 = 10 hugs per leg. Each hug needs 0.45 s at the top; the leg is found from geometry (the higher knee, near or far by depth, facing direction), not MediaPipe\'s left/right labels. A full leg stops counting and says "Now the other knee".',
   ], file: 'exercise_tracker/main_tracker.py · data/exercise_configs/*.json' },
   c_form: { tag: 'Every frame', title: 'Form rules', items: [
@@ -598,6 +598,7 @@ const D = {
     'Bunny reads it for context ("you did 12 squats today").',
   ], file: 'fitness_trainer/storage/live_session.py' },
   c_report: { tag: 'Results', title: 'Report screen', items: [
+    'An exercise is <b>completed only when its reps are done</b> (or the tracker finished every set). Leaving early — → / Enter, quit, or Bunny stopping it — keeps it <b>pending</b> with the reps done so far: back to the dashboard, no report, never "workout complete"; starting it again carries on from those reps.',
     'Per-exercise stats with a 30 s countdown; arm gesture or → skips. Returns to the dashboard, which centres the next unfinished exercise.',
     'After the last exercise: final summary → saved to local history, "workout completed" queued, Bunny\'s end-of-workout check-in. The gesture then shuts the app down.',
   ], file: 'fitness_trainer/screens/report_screen.py' },
