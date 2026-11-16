@@ -318,13 +318,13 @@ const D = {
   ], file: 'app/exercises/energy.py · compute_energy_profile' },
   safeex: { tag: 'Exercise lane', title: 'Safe exercise list', items: [
     'SQL filters on <code>public.exercises</code>: difficulty ≤ <span class="num">2</span> (beginner) or ≤ 3; no plyometrics for beginners; main workouts only.',
-    'Injury safety columns, BP safety and pregnancy safety must not be <code>AVOID</code>.',
+    'Injury safety columns, BP safety and pregnancy safety must not be <code>AVOID</code>. Neck pain uses the shoulder column (no overhead pressing or push-ups) plus its own prompt hint (no crunches pulling on the head, no headstands).',
     'Every piece of equipment needed must be one the user has (bodyweight always allowed).',
     'Then a <b>balanced pick of 25</b>: equal turns from each movement pattern (squat, hinge, push, pull, core…), rotated by week so every safe exercise comes up over a few weeks.',
     'DB error → falls back to the plain safe list, never to an unfiltered one.',
   ], file: 'app/exercises/safety.py · app/exercises/search.py' },
   activedays: { tag: 'Exercise lane', title: 'Workout days', items: [
-    '<span class="num">4–7</span> workout days a week, <span class="num">5</span> if not given; older profiles with fewer are raised to 4.',
+    '<span class="num">3–6</span> workout days a week (at least one rest day), <span class="num">5</span> if not given; older profiles outside it are brought inside (2 → 3, 7 → 6).',
     'Short first week (4 days or fewer left, e.g. joining Thursday–Sunday): every remaining day is a workout day.',
   ], file: 'app/exercises/workout.py · active_weekdays' },
   parts: { tag: 'Server', title: 'Parts', items: [
@@ -336,7 +336,7 @@ const D = {
     'For each meal type, a query sentence (meal, goal, diet, cuisines, condition hints) is embedded and matched against ingredient embeddings (pgvector, or exact in-process fallback).',
     'Score = similarity + popularity + right-meal boost + protein boost (loss/gain goals) + season + region − already-used penalty − cost penalty.',
     'Top N per food group (staple, protein, animal, vegetable, fruit, nut/seed, fat…), so no group crowds out the others.',
-    'Excluded: rotators used up this week, review “avoid” foods, out-of-season items, foods a condition keeps out of that meal (e.g. soya at breakfast with a thyroid tablet).',
+    'Excluded: rotators used up this week, review “avoid” foods, out-of-season items, foods a condition keeps out of that meal (e.g. soya at breakfast with a thyroid tablet), and <b>seeds</b> (chia, flax, pumpkin, sunflower, sesame, mustard…: the nut slot goes to almonds, peanuts, walnuts, cashews).',
     'Always added: everyday bases and protein foods, and the user\'s liked foods, if the filter allows them.',
   ], file: 'app/food/search.py · retrieve · app/plans/week_builder.py · _palette' },
   prompt: { tag: 'AI input', title: 'The one prompt per part', items: [
