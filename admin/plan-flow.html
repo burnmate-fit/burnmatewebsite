@@ -560,7 +560,7 @@ const D = {
   c_reps: { tag: 'Every frame', title: 'Rep counter', items: [
     'Driven by the server\'s <code>tracker_config</code>: joints (squat: hip–knee–ankle), <b>down 100°</b> / <b>up 155°</b>, slack, confirmation frames.',
     'Starts <b>unarmed</b>; arms after 2 frames in the start position.',
-    '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side; the Standing Side Bend Stretch holds 10 s to each side (either side first; spoken: hold it, almost there, stay in the stretch, now the other side), the side and the depth read from the trunk's sideways tilt, and each hold judged against the upright pose before it (bending forward, twisting, knees, hips pushed out, bouncing).',
+    '<b>Lockout</b> mode (squat): down past 100°+slack, counts on returning past 155° for ≥ 2 frames and ≥ 0.12 s. <b>Rebound</b> mode counts 10° off the extreme. <b>Hold</b> mode times plank / tree pose per side; the Standing Side Bend Stretch holds 10 s to each side (either side first; spoken: hold it, almost there, stay in the stretch, now the other side), the side and the depth read from the trunk's sideways tilt, and each hold judged against the upright pose before it (bending forward, twisting, knees, hips pushed out, bouncing). Plank: "in position" is decided by the body itself (not on the knees, hips within the shoulder-ankle line); tree pose: either leg first, hands up or at the chest, the foot on the thigh (green), near the knee (yellow, counts) or lower (red). A fault <b>pauses</b> the clock — the seconds held are kept — and switching leg starts that leg from zero.',
     '<b>Per side</b> (Walking Knee Hugs): one set of 20 = 10 hugs per leg. Each hug needs 0.45 s at the top; the leg is found from geometry (the higher knee, near or far by depth, facing direction), not MediaPipe\'s left/right labels. A full leg stops counting and says "Now the other knee".',
   ], file: 'exercise_tracker/main_tracker.py · data/exercise_configs/*.json' },
   c_form: { tag: 'Every frame', title: 'Form rules', items: [
@@ -586,11 +586,14 @@ const D = {
     'Each rep compared with your own baseline (median of reps 2–4).',
     'Challenged (1.2× slower) · Fatigued (1.25×, form −10, range &lt; 90%) · Struggling (1.5×, range &lt; 80%, or 2 of 3 reps rejected) · Possible discomfort (one rep 1.6× slower, or left/right gap doubled) · Inactive (10 s still).',
     'Must repeat for 2 reps. Challenged/Fatigued → a card + a recorded Bunny line (max 3 per set, 30 s apart). Struggling/discomfort → encouragement, then Bunny asks how you feel.',
+    'Inactive counts the wrists and ankles as movement too (not only the hips), and never fires while Bunny talks or its trainer clip plays, nor for 10 s after. A rejected attempt only counts toward Struggling (2 of the last 3 rejected) — its speed and range never mean "tired".',
+    '<b>Trainer-video offer</b>: the same <i>technique</i> correction on 3 reps in a row — never a setup one (position, facing, feet, distance). At most 2 per exercise, the 2nd at least 2 min after the 1st. Bunny listens up to 10 s (1.2 s of quiet ends an answer). Only a clear yes ("yes", "show me", "video") or silence plays the clip; anything else said, or 2 reps done meanwhile, carries on.',
+    'Every motivation line must be true whatever triggered it — none assumes the user is tired, resting or almost done (owner, 2026-11-17).',
   ], file: 'exercise_tracker/fatigue.py · screens/exercise_launcher.py' },
   c_sets: { tag: 'Sets', title: 'Demo, sets and rest', items: [
     'Demo video (<code>demo.mp4</code> + <code>demo.wav</code>) full screen first; tracking waits. Then the stance card ("Stand at about 45°…") → "Good stance. Start your exercise."',
     'After each set: "SET k DONE", then a REST countdown of <code>rest_seconds</code> with "NEXT: SET k OF n". → skips rest; Bunny pauses it.',
-    'Last set → "COMPLETED!" and the tracker process exits. Done = target reached, or ended with next / stopped for fatigue or discomfort.',
+    'Last set → "COMPLETED!" and the tracker process exits. Done = target reached (or every set finished); leaving early — next, quit, or Bunny stopping it — keeps it pending with its reps.',
   ], file: 'exercise_tracker/demo_video_player.py · main_tracker.py · exercise_launcher.py' },
   c_live: { tag: 'Results', title: 'Saved on the board first', items: [
     '<code>~/.burnmate/live.db</code> (SQLite, WAL, synchronous FULL), 14 days kept.',
