@@ -285,7 +285,8 @@ const D = {
   ], file: 'app/feedback/review.py · plan_adjustments' },
   targets: { tag: 'Food lane', title: 'Calorie & macro targets: the AI never sets these', items: [
     'BMR: FAO/WHO/UNU (Schofield) by age band and sex, <span class="num">× 0.90</span> for Indian adults (ICMR-NIN 2020).',
-    'TEE = BMR × activity factor (<span class="num">1.2</span> sedentary … <span class="num">1.9</span> extremely active; default 1.375).',
+    'TEE = BMR × activity factor (<span class="num">1.2</span> sedentary … <span class="num">1.9</span> extremely active; default 1.375). The factor is raised (never lowered) to what the planned workouts amount to: any = 1.375, 3+ days and 150+ min a week = 1.55, 6+ days and 300+ min = 1.725.',
+    'Weight goals: the user chooses a weekly pace on the last onboarding page (target + timeline, after activity and workouts). The bar offers only safe weeks: fastest = 1 % of body weight a week for loss / 0.5 % for gain, or what the calories really give if less; slowest = half the steady pace.',
     '<b>Weight loss</b>: deficit = min(<span class="num">550</span>, 25% of TEE); insulin users max <span class="num">300</span>; never below max(<span class="num">1200 F / 1500 M</span>, BMR); underweight (BMI &lt; 18.5) or target reached → no deficit.',
     '<b>Muscle gain</b>: surplus = min(<span class="num">275</span>, 12% of TEE). Breastfeeding adds energy; kidney disease caps protein.',
     'Protein g/kg by goal (<span class="num">1.6</span> loss, <span class="num">1.8</span> gain, 1.4 endurance…) on weight capped at BMI 25; kept within 10–35% of energy. Fat <span class="num">25%</span>, carbs the rest.',
@@ -341,7 +342,7 @@ const D = {
   ], file: 'app/food/search.py · retrieve · app/plans/week_builder.py · _palette' },
   prompt: { tag: 'AI input', title: 'The one prompt per part', items: [
     'Days to plan, each marked WORKOUT or REST.',
-    'User profile, energy numbers and burn range, earlier days\' workouts, health rules.',
+    'User profile, energy numbers and burn range, earlier days\' workouts, health rules. The Goal line carries the target weight, kg a week and weeks to go.',
     'Daily targets and per-meal kcal and protein.',
     '“INGREDIENTS YOU MAY USE”: the palette as <code>code name | unit | kcal/P | meals</code>. Use only these codes.',
     'Meal rules: lunch and dinner = staple + one protein + one vegetable; breakfast has one base; snacks uncooked, at most 2 items; butter, ghee and cheese at most twice a week; each protein or vegetable at most 2× in these days; at most one uncommon ingredient a day.',
