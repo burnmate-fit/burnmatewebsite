@@ -360,6 +360,7 @@ const D = {
     'Rich items (butter, ghee, cheese, peanut butter, whey, maida) ≤ <span class="num">2</span> meals a week. Other rotating foods ≤ <span class="num">3</span> a week. Daily caps (curd 2, milk 2, buttermilk 1…).',
     'At most 2 proteins in a meal; snacks never cooked (no oil or flour); breakfast keeps one base.',
     'Empty meal → a plain safe fallback meal. Lunch and dinner missing a staple, protein or vegetable → the missing part is added.',
+    'An unusable AI answer (no days, or half the part\'s meals would be fallback) is asked again of a <b>different model</b>; the better answer wins (still at most 2 asks per part). Fallback meals rotate day by day (never the same day twice, only foods meant for that meal). The part report keeps a short excerpt of the unusable answer for diagnosis.',
     'Cooked meals without a fat → the regional cooking oil (about 5 g) is added so its calories count.',
   ], file: 'app/plans/week_builder.py · _day_meals' },
   validate_ex: { tag: 'Server', title: 'Workouts: validate & build', items: [
@@ -434,7 +435,7 @@ const EX = {
   season: "November, North India: <b>31</b> foods left out (grapes, jamun, cherries…), <b>29</b> in season get a boost (guava, orange, amla, custard apple…).",
   energy: "Same 1,730 kcal day. A 30-minute beginner session should burn <b>65–105 kcal</b>.",
   safeex: "Knee pain + beginner + bodyweight and mat → <b>56</b> safe exercises → <b>25</b> this week (Warrior I, Knee Push-up, Towel Row…).",
-  activedays: "4 days a week → <b>Mon, Wed, Fri, Sat</b>.",
+  activedays: "4 days a week → <b>Mon, Wed, Fri, Sat</b>. A plan starting Tue or Wed fits the chosen days into the days left (4 from Tuesday → Tue, Wed, Fri, Sun); from Thursday every remaining day is a workout.",
   parts: "Part 1: Mon–Wed. Part 2: Thu–Sun, which knows what part 1 already used.",
   rag: "Breakfast shortlist: poha, oats, dalia, besan, curd, milk, guava… — no soya, no peanuts, no grapes.",
   prompt: "One message for Mon–Wed: her targets, ~35 foods per meal, 25 exercises and her health lines.",
