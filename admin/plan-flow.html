@@ -535,7 +535,7 @@ const D = {
     'Carousel of 3 cards in the plan\'s order: warm-up, main workout, cool-down; the first unfinished exercise in the centre. <b>Grey cards</b> (no tracker yet) say they aren\'t available and move on.',
     'A <b>warm-up or cool-down with a tracker</b> (Walking Knee Hugs) is a normal tracked card in its place, labelled "Warm-up", sets and reps from the registry. It is <b>optional</b>: skipping it never stops "today\'s workout complete" or the final summary, and its reps are not added to the day\'s total.',
     'Hero video decoded <b>once into RAM</b> and looped at 30 Hz, because this board has no hardware H.264 decoder.',
-    'On show: saves the plan to <code>live.db</code>, sets media priority, sends queued results, schedules Bunny\'s check-in after 3.5 s.',
+    'On show: saves the plan to <code>live.db</code>, sets media priority, sends queued results, then Bunny\'s check-in: after 3.5 s and only once its first line is ready (checked for up to 20 s; not ready = asked at the next visit or start). Leaving the dashboard or 40 s ends it; once answered it is not asked again that day, even after a restart.',
   ], file: 'fitness_trainer/screens/workout_dashboard.py · widgets/hero_video.py' },
   c_launch: { tag: 'On the TV', title: 'Start the tracker process', items: [
     'Shows "Loading…" (MediaPipe\'s first start can take 30–60 s), releases the app camera, then spawns the tracker as a <b>separate process</b> (spawn, not fork: libcamera, MediaPipe and Qt are not fork-safe).',
